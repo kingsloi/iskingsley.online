@@ -4,7 +4,7 @@
  * Set the necessary nw.js stuff
  */
 var gui = require('nw.gui');
-gui.Window.get().showDevTools();
+//gui.Window.get().showDevTools();
 var windows = gui.Window.get();
 var menu = new gui.Menu();
 
@@ -66,7 +66,7 @@ function ping() {
 
     if (enabled.checked) {
         xhr = new XMLHttpRequest();
-        timeout = setInterval(pingUrl, interval.value * 1000);
+        timeout = setInterval(pingUrl, interval.value * 10000);
         return;
     }
 
