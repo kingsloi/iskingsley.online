@@ -1,4 +1,12 @@
 {
-  "name": "helloworld",
-  "main": "index.html"
+	"name": "Is Kingsley Online?",
+	"main": "index.html",
+	"description": "A simple app to ping a given url every x minutes so your friends/family/colleagues know if you're online",
+	"version": "0.1.0",
+	"keywords": ["kingsley", "online", "online-checker", "node-webkit"],
+	"window": {
+		"toolbar": false,
+		"show": false,
+		"show_in_taskbar": false
+	}
 }
