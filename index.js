@@ -1,60 +1,134 @@
 "use strict";
 
-// (function() {
-//     var xhr = new XMLHttpRequest();
-//     var timeout = this.window.setInterval(function() {
-//         xhr.open('GET', 'http://iskingsley.online?password=password', false);
-//         xhr.send();
-//     }, 5000);
-// }).call(this);
+/**
+ * Set the necessary nw.js stuff
+ */
+var gui = require('nw.gui').Window.get().showDevTools();
+var windows = gui.Window.get();
+var menu = new gui.Menu();
 
-// GUI
-var gui = require('nw.gui');
-
-// Disable window
-var win = gui.Window.get();
-win.setResizable(false);
-win.hide();
+// Windows
+windows.setResizable(false);
+windows.hide();
 
 // Tray icon
 var tray = new gui.Tray({
     icon: 'img/icon.png'
 });
 
-// Build the menu
-var menu = new gui.Menu();
-
+// Menu
 menu.append(new gui.MenuItem({
     label: 'Settings',
     click: function() {
-        win.show();
+        windows.show();
     }
 }));
-
 menu.append(new gui.MenuItem({
     type: 'separator'
 }));
-
-
 menu.append(new gui.MenuItem({
     label: 'Quit',
     click: function() {
         gui.App.quit();
     }
 }));
-
-
-
 tray.menu = menu;
 
+/**
+ * Init all the things
+ * @return void
+ */
+function init() {
 
-function saveSettings() {
-    var enabled = document.getElementById("enabled").checked;
+    var url = document.getElementById("url");
+    var interval = document.getElementById("interval");
+    var enabled = document.getElementById("enabled");
+    var close = document.getElementById("close");
 
-    if (enabled) {
+    close.onclick = function() {
+        windows.hide();
+    };
 
-        var url = document.getElementById("url").value;
+    getSettings();
 
+    ping();
+}
 
+/**
+ * Ping given URL at the given interval
+ * @return void
+ */
+function ping() {
+    if (enabled.checked) {
+        var xhr = new XMLHttpRequest();
+        var timeout = setInterval(function() {
+            xhr.open('GET', url.value, false);
+            xhr.send();
+        }, interval.value * 1000);
     }
+}
+
+/**
+ * Get settings from localstorage
+ * @return void
+ */
+function getSettings() {
+    if (localStorage.getItem('is_online--url')) {
+        url.value = localStorage.getItem('is_online--url');
+    }
+    if (localStorage.getItem('is_online--interval')) {
+        interval.value = localStorage.getItem('is_online--interval');
+    }
+    if (localStorage.getItem('is_online--enabled')) {
+        if (localStorage.getItem('is_online--enabled') == "true") {
+            enabled.checked = true;
+        }
+    }
+}
+
+/**
+ * Set settings to localstorage
+ * @return void
+ */
+function setSettings() {
+    localStorage.setItem('is_online--url', url.value);
+    localStorage.setItem('is_online--interval', interval.value);
+    localStorage.setItem('is_online--enabled', enabled.checked);
+    alert('Settings saved');
+}
+
+/**
+ * Save settings
+ * @return void
+ */
+function saveSettings() {
+
+    var error = false;
+
+    if (enabled.checked) {
+
+        // Validate URL
+        if (!url.value.match(/\S/)) {
+            url.parentNode.classList.add('has-error');
+            error = true;
+        } else {
+            url.parentNode.classList.remove('has-error');
+        }
+
+        // Validate Interval
+        if (!interval.value.match(/\S/)) {
+            interval.parentNode.classList.add('has-error');
+            error = true;
+        } else {
+            interval.parentNode.classList.remove('has-error');
+        }
+    } else {
+
+        // Remove all errors
+        url.parentNode.classList.remove('has-error');
+        interval.parentNode.classList.remove('has-error');
+    }
+
+    // Save
+    if (!error) setSettings();
 }

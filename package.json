@@ -5,9 +5,10 @@
 	"version": "0.1.0",
 	"keywords": ["kingsley", "online", "online-checker", "node-webkit"],
 	"window": {
-		"toolbar": false,
+		"toolbar": true,
 		"show": false,
 		"show_in_taskbar": false,
 		"frame": false
-	}
+	},
+	"node-main": "index.js"
 }
