@@ -3,9 +3,13 @@
 /**
  * Set the necessary nw.js stuff
  */
-var gui = require('nw.gui').Window.get().showDevTools();
+var gui = require('nw.gui');
+gui.Window.get().showDevTools();
 var windows = gui.Window.get();
 var menu = new gui.Menu();
+
+var xhr;
+var timeout;
 
 // Windows
 windows.setResizable(false);
@@ -59,13 +63,24 @@ function init() {
  * @return void
  */
 function ping() {
+
     if (enabled.checked) {
-        var xhr = new XMLHttpRequest();
-        var timeout = setInterval(function() {
-            xhr.open('GET', url.value, false);
-            xhr.send();
-        }, interval.value * 1000);
+        xhr = new XMLHttpRequest();
+        timeout = setInterval(pingUrl, interval.value * 1000);
+        return;
     }
+
+    clearInterval(timeout);
+    timeout = 0;
+}
+
+/**
+ * Perform ping
+ * @return void
+ */
+function pingUrl() {
+    xhr.open('GET', url.value, false);
+    xhr.send();
 }
 
 /**
@@ -129,6 +144,8 @@ function saveSettings() {
         interval.parentNode.classList.remove('has-error');
     }
 
-    // Save
-    if (!error) setSettings();
+    if (!error) {
+        setSettings();
+        ping();
+    }
 }

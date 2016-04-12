@@ -8,7 +8,9 @@
 		"toolbar": true,
 		"show": false,
 		"show_in_taskbar": false,
-		"frame": false
+		"frame": false,
+		"width": 400,
+		"height": 300
 	},
 	"node-main": "index.js"
 }
