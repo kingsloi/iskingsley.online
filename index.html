@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Is Kingsley Online?</title>
+</head>
+<body>
+    <script>
+        (function(){
+            var xhr = new XMLHttpRequest();
+            var timeout = this.window.setInterval(function() {
+                xhr.open('GET', 'http://iskingsley.online?password=password', false);
+                xhr.send();
+            }, 5000);
+        }).call(this);
+    </script>
+</body>
+</html>
