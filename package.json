@@ -7,6 +7,7 @@
 	"window": {
 		"toolbar": false,
 		"show": false,
-		"show_in_taskbar": false
+		"show_in_taskbar": false,
+		"frame": false
 	}
 }

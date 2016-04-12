@@ -24,11 +24,8 @@ var tray = new gui.Tray({
 // Build the menu
 var menu = new gui.Menu();
 
-
-
 menu.append(new gui.MenuItem({
-    type: 'checkbox',
-    label: 'Enable',
+    label: 'Settings',
     click: function() {
         win.show();
     }
@@ -49,3 +46,15 @@ menu.append(new gui.MenuItem({
 
 
 tray.menu = menu;
+
+
+function saveSettings() {
+    var enabled = document.getElementById("enabled").checked;
+
+    if (enabled) {
+
+        var url = document.getElementById("url").value;
+
+
+    }
+}

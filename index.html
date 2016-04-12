@@ -2,30 +2,30 @@
 <html>
 <head>
     <title>Is Kingsley Online?</title>
-    <link href="bootstrap.css" rel="stylesheet" />
+    <link rel="stylesheet" href="bootstrap.css" />
+    <link rel="stylesheet" href="app.css" />
     <script src="index.js"></script>
 </head>
-<body>
-    <div class="container">
+<body id="app">
 
-        <form>
+    <div class="container">
+        <form name="settings" id="settings" onsubmit="event.preventDefault(); saveSettings();">
             <div class="form-group">
                 <label for="url">Ping URL</label>
-                <input type="text" class="form-control" id="url" placeholder="http://iskingsley.online?yes=heis">
+                <input type="text" class="form-control" id="url" name="url" placeholder="http://iskingsley.online?yes=heis">
             </div>
             <div class="form-group">
                 <label for="interval">Ping Interval (in minutes)</label>
-                <input type="number" class="form-control" id="interval" placeholder="Ping every x minutes">
+                <input type="number" class="form-control" id="interval" name="interval" placeholder="Ping every x minutes">
             </div>
             <div class="checkbox">
                 <label>
-                    <input type="checkbox"> Enabled?
+                    <input type="checkbox" id="enabled" name="enabled" value="yes"> Enabled?
                 </label>
             </div>
             <button type="submit" class="btn btn-default">Save</button>
         </form>
-
-
     </div>
+
 </body>
 </html>
