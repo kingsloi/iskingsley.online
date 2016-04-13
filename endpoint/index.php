@@ -23,12 +23,31 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="theme-color" content="#<?php echo (($status == 'online') ? 'dff0d8' : 'f2dede' );?>">
+
         <title>Is Kingsley Online?</title>
 
-        <!-- CSS -->
+        <meta content="Is Kingsley Online?" property="og:title" />
+        <meta content="website" property="og:type" />
+        <meta content="Don't know if Kingsley is online? Find out here" property="og:description" />
+        <meta content="http://iskingsley.online" property="og:url" />
+        <meta content="/preview-image.png" property="og:image" />
+
+        <meta content="summary_large_image" name="twitter:card" />
+        <meta content="Is Kingsley Online?" name="twitter:title" />
+        <meta content="Don't know if Kingsley is online? Find out here" name="twitter:description" />
+        <meta content="/preview-image.png" name="twitter:image" />
+        <meta content="http://iskingsley.online" name="twitter:url" />
+
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.1/css/font-awesome.min.css">
 
+        <!--[if lt IE 9]>
+            <script src="//oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+            <script src="//oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+        <![endif]-->
 
         <style>
             html,body, .status {
