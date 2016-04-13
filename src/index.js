@@ -3,7 +3,8 @@
 /**
  * Set the necessary nw.js stuff
  */
-var gui = require('nw.gui');
+
+var gui = window.require('nw.gui');
 var os = require('os');
 var fs = require('fs');
 var util = require('util');
@@ -27,7 +28,7 @@ var log_file = fs.createWriteStream(__dirname + '/debug.log', {
 
 var log_stdout = process.stdout;
 
-console.log = function(d) { //
+console.log = function(d) {
     log_file.write(util.format(d) + '\n');
     log_stdout.write(util.format(d) + '\n');
 };
@@ -105,20 +106,13 @@ function ping() {
 
     if (enabled.checked) {
         xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-                if (xhr.status !== 200) {
-                    alert('XHR Error. Please check the URL and/or your internet connection').
-                    return;
-                }
-            }
-        }
-
         timeout = setInterval(function() {
             xhr.open('GET', url.value, false);
             xhr.send();
+            updateHeartbeat();
         }, interval.value * 10000);
-        return;
+
+        return true;
     }
 
     clearInterval(timeout);
@@ -190,4 +184,25 @@ function saveSettings() {
         setSettings();
         ping();
     }
+}
+
+/**
+ * Update last ping timestamp
+ * @return void
+ */
+function updateHeartbeat() {
+    var now = new Date();
+    var strDateTime = [
+        [AddZero(now.getDate()), AddZero(now.getMonth() + 1), now.getFullYear()].join("/"), [AddZero(now.getHours()), AddZero(now.getMinutes())].join(":"), now.getHours() >= 12 ? "PM" : "AM"
+    ].join(" ");
+    document.getElementById("heartbeat__value").innerHTML = strDateTime;
+};
+
+/**
+ * Add a 0 for single-digit date/time values
+ * @param int
+ * @return string
+ */
+function AddZero(num) {
+    return (num >= 0 && num < 10) ? "0" + num : num + "";
 }

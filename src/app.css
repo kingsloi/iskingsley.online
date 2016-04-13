@@ -10,10 +10,15 @@
     display: block;
 }
 
-.author {
+.author,
+.heartbeat {
     margin-top: 15px;
     text-align: right;
     font-size: 0.75em;
+}
+
+.heartbeat__value {
+    font-style: italic;
 }
 
 .heart {
