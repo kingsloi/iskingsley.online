@@ -10,6 +10,9 @@ var util = require('util');
 
 var __dirname = process.cwd();
 
+var windows = gui.Window.get();
+var menu = new gui.Menu();
+
 /**
  * Handle errors/logging
  */
@@ -39,8 +42,6 @@ var timeout;
 // gui.Window.get().showDevTools();
 
 // Windows
-var windows = gui.Window.get();
-var menu = new gui.Menu();
 windows.setResizable(false);
 windows.hide();
 
