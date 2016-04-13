@@ -31,9 +31,9 @@
 
         <title>
             <?php if($status == 'online'):?>
-                &#128077; - yes, Kingsley is online!
+                Yeah &#128077;, Kingsley is online!
             <?php else: ?>
-                &#128078; - no, Kingsley is offline!
+                No &#128078;, Kingsley is offline!
             <?php endif; ?>
         </title>
 
