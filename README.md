@@ -18,18 +18,19 @@ To top it off, it's wrapped into a lovely OSX app so no awkawrd/complicated inst
   - Click Settings
   - Set your URL endpoint and a interval to ping
 
-### PHP Endpoint  
+### PHP Endpoint
   - Edit the `index.php` with your details
   - Upload it to your webserver
   - Create a `password.txt` and a `last_updated.txt` somewhere **outside** of the webroot (so they're not publicly accessible). Updating the paths in the `index.php` if necessary.
   - Make both txt files writable
   - Create a random password in `password.txt`
   - Test it in your browser by going to [http://your_url.com?password=your_password](http://your_url.com?password=your_password)
-  
-  
+
+
 ## Contributing
    - Contributions are welcome!
    - Pull down, edit, and submit a Pull Request
+   - [https://github.com/nwjs/nw.js](https://github.com/nwjs/nw.js) is used to pack the web app into OS apps
 
 ## License
 The code in this repo uses the MIT license, see our LICENSE file.
