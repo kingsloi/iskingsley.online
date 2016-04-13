@@ -10,9 +10,8 @@ To top it off, it's wrapped into a lovely OSX app so no awkawrd/complicated inst
 
 ## Installation
 ### OSX Application
-  - Download the repo
-  - Unzip the .zip file from the `/build` folder
-  - Move the unzipped `.app` file to your `/Applications` folder
+  - Download the app for your OS from https://github.com/kingsloi/iskingsley.online/releases
+  - Move the unzipped `.app`/`.exe` file to your `/Applications` folder
   - Run it
   - It's windowless and menuless, and only appears in the tray. Look for the lightbulb
   - Click Settings
