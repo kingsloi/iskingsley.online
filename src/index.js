@@ -54,6 +54,10 @@ function init() {
     var enabled = document.getElementById("enabled");
     var close = document.getElementById("close");
 
+    process.on('uncaughtException', function(err) {
+        alert('Fatal error. Please close and restart the application.');
+    });
+
     close.onclick = function() {
         windows.hide();
     };
@@ -71,21 +75,24 @@ function ping() {
 
     if (enabled.checked) {
         xhr = new XMLHttpRequest();
-        timeout = setInterval(pingUrl, interval.value * 10000);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status !== 200) {
+                    alert('XHR Error. Please check the URL and/or your internet connection').
+                    return;
+                }
+            }
+        }
+
+        timeout = setInterval(function() {
+            xhr.open('GET', url.value, false);
+            xhr.send();
+        }, interval.value * 10000);
         return;
     }
 
     clearInterval(timeout);
     timeout = 0;
-}
-
-/**
- * Perform ping
- * @return void
- */
-function pingUrl() {
-    xhr.open('GET', url.value, false);
-    xhr.send();
 }
 
 /**
