@@ -37,6 +37,13 @@
             <?php endif; ?>
         </title>
 
+        <?php if($status == 'online'):?>
+            <link rel='shortcut icon' type='image/x-icon' href='/thumb-up.ico' />
+        <?php else:?>
+            <link rel='shortcut icon' type='image/x-icon' href='/thumb-down.ico' />
+        <?php endif;?>
+
+
         <meta content="Is Kingsley Online?" property="og:title" />
         <meta content="website" property="og:type" />
         <meta content="Don't know if Kingsley is online? Find out here" property="og:description" />
