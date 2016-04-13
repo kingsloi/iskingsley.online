@@ -3,7 +3,7 @@
                 --name=AreYouOnline \
                 --output-dir=/Users/kingsley/Desktop/nwjs/build \
                 --osx-icon=/Users/kingsley/Desktop/nwjs/src/img/icon.icns \
-                --win-icon=/Users/kingsley/Desktop/nwjs/src/img/icon.ico \
+              	--target="4 5" \
                 --build
 
 

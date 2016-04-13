@@ -23,11 +23,19 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
+        <meta http-equiv="refresh" content="60" />
+
         <meta name="apple-mobile-web-app-capable" content="yes">
         <meta name="mobile-web-app-capable" content="yes">
         <meta name="theme-color" content="#<?php echo (($status == 'online') ? 'dff0d8' : 'f2dede' );?>">
 
-        <title>Is Kingsley Online?</title>
+        <title>
+            <?php if($status == 'online'):?>
+                &#128077; - yes, Kingsley is online!
+            <?php else: ?>
+                &#128078; - no, Kingsley is offline!
+            <?php endif; ?>
+        </title>
 
         <meta content="Is Kingsley Online?" property="og:title" />
         <meta content="website" property="og:type" />
