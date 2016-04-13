@@ -5,3 +5,7 @@
                 --osx-icon=/Users/kingsley/Desktop/nwjs/src/img/icon.icns \
                 --win-icon=/Users/kingsley/Desktop/nwjs/src/img/icon.ico \
                 --build
+
+
+./nwjs-build.sh \
+                --clean

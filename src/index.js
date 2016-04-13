@@ -4,8 +4,30 @@
  * Set the necessary nw.js stuff
  */
 var gui = require('nw.gui');
-var windows = gui.Window.get();
-var menu = new gui.Menu();
+var os = require('os');
+var fs = require('fs');
+var util = require('util');
+
+var __dirname = process.cwd();
+
+/**
+ * Handle errors/logging
+ */
+process.on('uncaughtException', function(err) {
+    console.log(err);
+    alert('Fatal Error! Check debug log for details.');
+});
+
+var log_file = fs.createWriteStream(__dirname + '/debug.log', {
+    flags: 'w'
+});
+
+var log_stdout = process.stdout;
+
+console.log = function(d) { //
+    log_file.write(util.format(d) + '\n');
+    log_stdout.write(util.format(d) + '\n');
+};
 
 /**
  * Global variales
@@ -17,6 +39,8 @@ var timeout;
 // gui.Window.get().showDevTools();
 
 // Windows
+var windows = gui.Window.get();
+var menu = new gui.Menu();
 windows.setResizable(false);
 windows.hide();
 
@@ -25,7 +49,16 @@ var tray = new gui.Tray({
     icon: 'img/icon.png'
 });
 
-// Menu
+// Workaround for copy-paste working on Mac.
+if (os.platform() == "darwin") {
+    var nativeMenuBar = new gui.Menu({
+        type: "menubar"
+    });
+    nativeMenuBar.createMacBuiltin("Are You Online?");
+    windows.menu = nativeMenuBar;
+}
+
+// Tray Menu
 menu.append(new gui.MenuItem({
     label: 'Settings',
     click: function() {
@@ -53,11 +86,6 @@ function init() {
     var interval = document.getElementById("interval");
     var enabled = document.getElementById("enabled");
     var close = document.getElementById("close");
-
-    process.on('uncaughtException', function(err) {
-        alert('Fatal error. Quitting...');
-        gui.App.quit();
-    });
 
     close.onclick = function() {
         windows.hide();
