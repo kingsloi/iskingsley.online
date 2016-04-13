@@ -2,11 +2,16 @@
 
     // Update timestamp
     if(isset($_GET['password'])){
+        $success = false;
         $password = file_get_contents('../private/password.txt');
         $password = trim($password);
         if($_GET['password'] == $password){
             file_put_contents('../private/last_updated.txt', date('Y-m-d H:i:s'));
+            $success = true;
         }
+        header('Content-type: application/json');
+        echo json_encode(array('success' => $success));
+        exit();
     }
 
     // Fetch timestamp
