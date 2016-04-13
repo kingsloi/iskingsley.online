@@ -1,0 +1,7 @@
+./nwjs-build.sh \
+                --src=/Users/kingsley/Desktop/nwjs/src \
+                --name=AreYouOnline \
+                --output-dir=/Users/kingsley/Desktop/nwjs/build \
+                --osx-icon=/Users/kingsley/Desktop/nwjs/src/img/icon.icns \
+                --win-icon=/Users/kingsley/Desktop/nwjs/src/img/icon.ico \
+                --build

@@ -4,12 +4,17 @@
  * Set the necessary nw.js stuff
  */
 var gui = require('nw.gui');
-//gui.Window.get().showDevTools();
 var windows = gui.Window.get();
 var menu = new gui.Menu();
 
+/**
+ * Global variales
+ */
 var xhr;
 var timeout;
+
+// Devtools
+// gui.Window.get().showDevTools();
 
 // Windows
 windows.setResizable(false);

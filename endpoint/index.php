@@ -40,7 +40,6 @@
             body.kingsley--is-offline{
                 background-color: #f2dede;
             }
-
             .status{
                 display: -ms-flexbox;
                 display: -webkit-flex;
@@ -51,7 +50,7 @@
                 align-items: center;
                 justify-content: center;
                 height: 100%;
-                font-size: 5em;
+                font-size: 10em;
                 font-weight: bold;
             }
         </style>
