@@ -55,7 +55,8 @@ function init() {
     var close = document.getElementById("close");
 
     process.on('uncaughtException', function(err) {
-        alert('Fatal error. Please close and restart the application.');
+        alert('Fatal error. Quitting...');
+        gui.App.quit();
     });
 
     close.onclick = function() {
