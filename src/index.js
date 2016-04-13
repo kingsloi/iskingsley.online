@@ -110,7 +110,7 @@ function ping() {
             xhr.open('GET', url.value, false);
             xhr.send();
             updateHeartbeat();
-        }, interval.value * 10000);
+        }, interval.value * 60000);
 
         return true;
     }
