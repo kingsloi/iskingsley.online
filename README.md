@@ -25,11 +25,14 @@ To top it off, it's wrapped into a lovely OSX app so no awkawrd/complicated inst
   - Create a random password in `password.txt`
   - Test it in your browser by going to [http://your_url.com?password=your_password](http://your_url.com?password=your_password)
 
+## People using it
+_Using it? Share your site! Fork it, edit this readme, add your site/author, and submit a pull request!_
+- [http://iskingsley.online](http://iskingsley.online)
 
 ## Contributing
    - Contributions are welcome!
    - Pull down, edit, and submit a Pull Request
-   - [https://github.com/nwjs/nw.js](https://github.com/nwjs/nw.js) is used to pack the web app into OS apps
+   - [https://github.com/nwjs/nw.js](https://github.com/nwjs/nw.js) is used to pack the web app into OS apps. See src/build-command for how to build it
 
 ## License
 The code in this repo uses the MIT license, see our LICENSE file.
