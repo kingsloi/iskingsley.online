@@ -11,7 +11,8 @@
 }
 
 .author,
-.heartbeat {
+.heartbeat,
+.debug {
     margin-top: 15px;
     text-align: right;
     font-size: 0.75em;

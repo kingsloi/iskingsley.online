@@ -75,12 +75,6 @@ menu.append(new gui.MenuItem({
     }
 }));
 menu.append(new gui.MenuItem({
-    label: 'Debug Log',
-    click: function() {
-        gui.Shell.openItem('debug.log');
-    }
-}));
-menu.append(new gui.MenuItem({
     type: 'separator'
 }));
 menu.append(new gui.MenuItem({
@@ -102,6 +96,7 @@ function init() {
     var enabled = document.getElementById("enabled");
     var close = document.getElementById("close");
     var author = document.getElementById("author__url");
+    var debug = document.getElementById("debug__link");
 
     close.onclick = function() {
         windows.hide();
@@ -110,6 +105,11 @@ function init() {
     author.onclick = function() {
         gui.Shell.openExternal('https://kingsleyraspe.co.uk');
     };
+
+    debug.onclick = function() {
+        alert("Attempting to open log. If it doesn't open, navigate to " + __dirname + "/debug.log");
+        gui.Shell.openItem('./debug.log');
+    }
 
     getSettings();
 
