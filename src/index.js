@@ -24,6 +24,8 @@ process.on('uncaughtException', function(err) {
         timeout = 0;
         enabled.checked = false;
         alert("Error pinging " + url.value + ". Please check the URL/your internet connection and try again.");
+    } else {
+        alert('A fatal error occured! Check the debug.log.');
     }
 });
 
