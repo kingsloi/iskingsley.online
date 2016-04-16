@@ -1,21 +1,50 @@
-#app {
-    padding: 1em 0;
+@font-face {
+    font-family: "Open Sans";
+    src: url(fonts/OpenSans-Light.ttf) format("truetype");
+    font-style: normal;
 }
 
-.form-group .help-block {
+#app {
+    padding: 1em;
+    font-family: 'Open Sans', sans-serif;
+}
+
+.forms,
+.forms section {
+    margin-bottom: 15px;
+}
+
+input[type="email"],
+input[type="number"],
+input[type="search"],
+input[type="text"],
+input[type="tel"],
+input[type="url"],
+input[type="password"],
+textarea,
+select {
+    font-family: 'Open Sans', sans-serif;
+}
+
+label .error {
     display: none;
+}
+
+section.has-error .error {
+    display: inline-block;
 }
 
 .form-group.has-error .help-block {
     display: block;
 }
 
-.author,
-.heartbeat,
-.debug {
-    margin-top: 15px;
+.additional-info {
     text-align: right;
+}
+
+.additional-info li {
     font-size: 0.75em;
+    display: block;
 }
 
 .heartbeat__value {
@@ -24,4 +53,9 @@
 
 .heart {
     color: red;
+    padding: 0 2.5px;
+}
+
+.actions {
+    text-align: right;
 }

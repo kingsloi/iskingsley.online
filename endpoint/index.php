@@ -9,8 +9,12 @@
             file_put_contents('../private/last_updated.txt', date('Y-m-d H:i:s'));
             $success = true;
         }
+        http_response_code(($success) ? 200 : 400);
         header('Content-type: application/json');
-        echo json_encode(array('success' => $success));
+        echo json_encode(array(
+            'success' => $success,
+            'expires_on' => date("d/m/Y H:i A", strtotime(date("Y-m-d H:i:s")." +10 minutes"))
+        ));
         exit();
     }
 
