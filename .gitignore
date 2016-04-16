@@ -1,4 +1,6 @@
 src/debug.log
+src/node_modules
 build
 *.zip
 node_modules
+npm-debug.log
