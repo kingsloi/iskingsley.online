@@ -1,6 +1,17 @@
 'use strict';
 
 var request = require('request');
+var shell = require('shell');
+var remote = require('remote');
+
+var menubar = require('menubar').remote;
+
+menubar.on('after-show', function() {
+    console.log(' 1231');
+    // console.log(ipc.app.BrowserWindow);
+
+})
+
 
 (function($) {
 
@@ -109,6 +120,9 @@ var request = require('request');
             localStorage.setItem('is_online--interval', $.trim($interval.val()));
             localStorage.setItem('is_online--enabled', $enabled.is(":checked"));
             alert('Settings saved');
+
+            var window = remote.getCurrentWindow();
+            window.hide();
         };
 
         /**
@@ -140,8 +154,20 @@ var request = require('request');
             return (num >= 0 && num < 10) ? "0" + num : num + "";
         };
 
+        /**
+         * Misc help fuctions
+         * @return void
+         */
+        var helpers = function() {
+            $(document).on('click', 'a[href^="http"]', function(event) {
+                event.preventDefault();
+                shell.openExternal(this.href);
+            });
+        };
+
         return {
             init: function() {
+                helpers();
                 getSettings();
                 saveSettings();
 
