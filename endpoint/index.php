@@ -6,14 +6,23 @@
         $password = file_get_contents('../private/password.txt');
         $password = trim($password);
         if($_GET['password'] == $password){
-            file_put_contents('../private/last_updated.txt', date('Y-m-d H:i:s'));
+
+            if(isset($_GET['offline']) && $_GET['offline'] == "1"){
+                $dateToWrite = date("Y-m-d H:i:s", strtotime(date("Y-m-d H:i:s")." -2 minutes"));
+                $expires_on = false;
+            }else{
+                $dateToWrite = date('Y-m-d H:i:s');
+                $expires_on = date("Y-m-d H:i:s", strtotime(date("Y-m-d H:i:s")." +1 minutes"));
+            }
+
+            file_put_contents('../private/last_updated.txt', $dateToWrite);
             $success = true;
         }
         http_response_code(($success) ? 200 : 400);
         header('Content-type: application/json');
         echo json_encode(array(
             'success' => $success,
-            'expires_on' => date("d/m/Y H:i A", strtotime(date("Y-m-d H:i:s")." +10 minutes"))
+            'expires_on' => $expires_on
         ));
         exit();
     }
@@ -22,7 +31,7 @@
     $last_updated = file_get_contents('../private/last_updated.txt');
 
     // Last update within 10 minutes?
-    $status = (strtotime($last_updated) > strtotime("-10 minutes") ? 'online' : 'offline');
+    $status = (strtotime($last_updated) > strtotime("-1 minutes") ? 'online' : 'offline');
 ?>
 
 <!DOCTYPE html>
