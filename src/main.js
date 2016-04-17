@@ -10,6 +10,12 @@ var mb = menubar(opts);
 
 
 var ipc = require('electron').ipcMain;
+// /var ipc = require('ipc');
+
+ipc.on('invokeAction', function(event, data) {
+	var result = processData(data);
+	event.sender.send('actionReply', result);
+});
 
 // ipc.on('close-main-window', function() {
 // 	console.log(mb.window.closeDevTools());
@@ -18,7 +24,7 @@ var ipc = require('electron').ipcMain;
 
 
 mb.on('after-show', function() {
-	ipc.send('some-server-message', 'bar');
+	//ipc.send('some-server-message', 'bar');
 })
 
 mb.on('after-create-window', function() {

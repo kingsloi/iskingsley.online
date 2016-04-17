@@ -2,25 +2,57 @@
 
 var request = require('request');
 var shell = require('shell');
-
-var ipc = require('electron').ipcMain;
-
-ipc.on('global-shortcut', function(arg) {
-    var event = new MouseEvent('click');
-    soundButtons[arg].dispatchEvent(event);
-});
+var remote = require('remote');
 
 (function($) {
 
     var App = function() {
 
         var timeout;
+        var heartbeat_timeout;
+        var heartbeat_expires_on;
 
         var $url = $("#url__value");
         var $interval = $("#interval__value");
         var $enabled = $("#enabled__value");
         var $author = $(".author__url");
         var $heartbeat = $(".heartbeat__value");
+        var $go_offline = $('#go-offline');
+
+        /**
+         * Get heartbeat expiry
+         * @return string | false
+         */
+        var getHeartbeatExpiry = function() {
+            return (heartbeat_expires_on ? heartbeat_expires_on : false);
+        };
+
+        /**
+         * Set heartbeat expiry
+         * @param heartbeat expiry datetime from the server
+         */
+        var setHeartbeatExpiry = function(heartbeat_expiry) {
+            heartbeat_expires_on = heartbeat_expiry;
+        };
+
+        /**
+         * Show/hide go offline button if heartbeat has/hasn't expired
+         * @return boolean Whether heartbeat has expired
+         */
+        var toggleGoOfflineButton = function() {
+            var now = new Date();
+            var expiry = (getHeartbeatExpiry() ? new Date(getHeartbeatExpiry()) : false);
+
+            if (now > expiry || expiry === false) {
+                $go_offline.hide();
+                clearTimeout(heartbeat_timeout);
+                return true;
+            }
+
+            $go_offline.show();
+            heartbeat_timeout = setTimeout(toggleGoOfflineButton, 1000);
+            return false;
+        };
 
         /**
          * Get settings from localstorage
@@ -40,7 +72,6 @@ ipc.on('global-shortcut', function(arg) {
             }
         };
 
-
         /**
          * Send heartbeat to specified URL
          * @return void
@@ -55,8 +86,7 @@ ipc.on('global-shortcut', function(arg) {
                 } else {
                     alert("Ooops! There was a problem with the URL you've supplied. Please check it and try again!");
                     $enabled.prop('checked', false);
-                    clearInterval(timeout);
-                    timeout = 0;
+                    clearTimeout(timeout);
                 }
             });
         };
@@ -70,8 +100,7 @@ ipc.on('global-shortcut', function(arg) {
                 e.preventDefault();
 
                 var error = false;
-                clearInterval(timeout);
-                timeout = 0;
+                clearTimeout(timeout);
 
                 $url.removeClass('input-error').parent().removeClass('has-error');
                 $interval.removeClass('input-error').parent().parent().removeClass('has-error');
@@ -101,9 +130,8 @@ ipc.on('global-shortcut', function(arg) {
          */
         var performCPR = function() {
             if ($enabled.is(":checked")) {
-                timeout = setInterval(function() {
-                    sendHeartBeat();
-                }, localStorage.getItem('is_online--interval') * 60000);
+                sendHeartBeat(); //localStorage.getItem('is_online--interval') * 60000
+                timeout = setTimeout(performCPR, 1000);
             }
         };
 
@@ -128,6 +156,8 @@ ipc.on('global-shortcut', function(arg) {
          */
         function updateHeartbeat(expires_on) {
             $heartbeat.html(getDateTime());
+            setHeartbeatExpiry(expires_on);
+            toggleGoOfflineButton();
             $heartbeat.prop('title', 'Expires: ' + expires_on);
         };
 
@@ -162,11 +192,37 @@ ipc.on('global-shortcut', function(arg) {
             });
         };
 
+        var goOffline = function() {
+            $go_offline.click(function(e) {
+                e.preventDefault();
+                sendFlatline();
+            });
+        };
+
+        var sendFlatline = function() {
+            request(localStorage.getItem('is_online--url') + "&offline=1", function(error, response, body) {
+                if (!error && response.statusCode == 200) {
+                    var body = $.parseJSON(body);
+                    if (body.success === true) {
+                        console.log('lol');
+                        setHeartbeatExpiry(false);
+                        toggleGoOfflineButton();
+                    }
+                } else {
+                    alert("Ooops! There was a problem with sending the offline command. Please check the URL and try again.");
+                    $enabled.prop('checked', false);
+                }
+            });
+        };
+
+
         return {
             init: function() {
                 helpers();
                 getSettings();
                 saveSettings();
+                goOffline();
+                toggleGoOfflineButton();
 
                 if ($enabled.is(":checked")) {
                     sendHeartBeat();
