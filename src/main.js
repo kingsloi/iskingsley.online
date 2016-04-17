@@ -1,5 +1,6 @@
 var menubar = require('menubar');
-var ipc = require("electron").ipcMain;
+
+
 var opts = {
 	// "width": 300,
 	// "height": 375
@@ -7,10 +8,17 @@ var opts = {
 
 var mb = menubar(opts);
 
-mb.on('after-show', function() {
-	console.log(' 1231');
-	// console.log(ipc.app.BrowserWindow);
 
+var ipc = require('electron').ipcMain;
+
+// ipc.on('close-main-window', function() {
+// 	console.log(mb.window.closeDevTools());
+// });
+
+
+
+mb.on('after-show', function() {
+	ipc.send('some-server-message', 'bar');
 })
 
 mb.on('after-create-window', function() {

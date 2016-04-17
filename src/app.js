@@ -2,16 +2,13 @@
 
 var request = require('request');
 var shell = require('shell');
-var remote = require('remote');
 
-var menubar = require('menubar').remote;
+var ipc = require('electron').ipcMain;
 
-menubar.on('after-show', function() {
-    console.log(' 1231');
-    // console.log(ipc.app.BrowserWindow);
-
-})
-
+ipc.on('global-shortcut', function(arg) {
+    var event = new MouseEvent('click');
+    soundButtons[arg].dispatchEvent(event);
+});
 
 (function($) {
 
