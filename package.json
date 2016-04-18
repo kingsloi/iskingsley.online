@@ -1,0 +1,23 @@
+{
+  "name": "AreYouOnline",
+  "description": "A simple app to ping a given url every x minutes so your friends/family/colleagues know if you're online",
+  "version": "3.0.0",
+  "keywords": ["is", "kingsley", "online", "online-checker", "online checker", "electron", "php"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kingsloi/iskingsley.online.git"
+  },
+  "dependencies": {
+    "menubar": "*"
+  },
+  "devDependencies": {
+    "electron-packager": "^6.0.2",
+    "electron-prebuilt": "^0.37.6"
+  },
+  "main": "main.js",
+  "scripts": {
+    "build": "electron-packager ./src/ 'Are You Online' --platform=darwin --arch=x64 --version=0.37.6 --icon=Icon.icns --out=../build/",
+    "start": "electron ./src/"
+  },
+  "license": "MIT"
+}

@@ -9,22 +9,27 @@ var remote = require('remote');
     var App = function() {
 
         var timeout;
+        var flatline = false;
         var heartbeat_timeout;
         var heartbeat_expires_on;
 
         var $url = $("#url__value");
-        var $interval = $("#interval__value");
-        var $enabled = $("#enabled__value");
         var $author = $(".author__url");
-        var $heartbeat = $(".heartbeat__value");
         var $go_offline = $('#go-offline');
+        var $enabled = $("#enabled__value");
+        var $interval = $("#interval__value");
+        var window = remote.getCurrentWindow();
+        var $heartbeat = $(".heartbeat__value");
 
         /**
-         * Get heartbeat expiry
-         * @return string | false
+         * Misc help fuctions
+         * @return void
          */
-        var getHeartbeatExpiry = function() {
-            return (heartbeat_expires_on ? heartbeat_expires_on : false);
+        var helpers = function() {
+            $(document).on('click', 'a[href^="http"]', function(event) {
+                event.preventDefault();
+                shell.openExternal(this.href);
+            });
         };
 
         /**
@@ -36,22 +41,21 @@ var remote = require('remote');
         };
 
         /**
-         * Show/hide go offline button if heartbeat has/hasn't expired
-         * @return boolean Whether heartbeat has expired
+         * Get heartbeat expiry
+         * @return string | false
          */
-        var toggleGoOfflineButton = function() {
-            var now = new Date();
-            var expiry = (getHeartbeatExpiry() ? new Date(getHeartbeatExpiry()) : false);
+        var getHeartbeatExpiry = function() {
+            return (heartbeat_expires_on ? heartbeat_expires_on : false);
+        };
 
-            if (now > expiry || expiry === false) {
-                $go_offline.hide();
-                clearTimeout(heartbeat_timeout);
-                return true;
-            }
-
-            $go_offline.show();
-            heartbeat_timeout = setTimeout(toggleGoOfflineButton, 1000);
-            return false;
+        /**
+         * Set settings to localstorage
+         * @return void
+         */
+        var setSettings = function() {
+            localStorage.setItem('is_online--url', $.trim($url.val()));
+            localStorage.setItem('is_online--interval', $.trim($interval.val()));
+            localStorage.setItem('is_online--enabled', $enabled.is(":checked"));
         };
 
         /**
@@ -70,6 +74,27 @@ var remote = require('remote');
                     $enabled.prop('checked', true);
                 }
             }
+        };
+
+        /**
+         * Show/hide go offline button if heartbeat has/hasn't expired
+         * @return boolean Whether heartbeat has expired
+         */
+        var toggleGoOfflineButton = function() {
+            var now = new Date();
+            var expiry = (getHeartbeatExpiry() ? new Date(getHeartbeatExpiry()) : false);
+
+            if (now > expiry || expiry === false || flatline === true) {
+                $enabled.prop('checked', false);
+                setSettings();
+                $go_offline.hide();
+                return true;
+            }
+
+            $go_offline.show();
+            clearTimeout(heartbeat_timeout);
+            heartbeat_timeout = setTimeout(toggleGoOfflineButton, 1000);
+            return false;
         };
 
         /**
@@ -92,6 +117,26 @@ var remote = require('remote');
         };
 
         /**
+         * Send offline signal to server
+         * @return void
+         */
+        var sendFlatline = function() {
+            request(localStorage.getItem('is_online--url') + "&offline=1", function(error, response, body) {
+                if (!error && response.statusCode == 200) {
+                    var body = $.parseJSON(body);
+                    if (body.success === true) {
+                        setHeartbeatExpiry(false);
+                        flatline = true;
+                        toggleGoOfflineButton();
+                    }
+                } else {
+                    alert("Ooops! There was a problem with sending the offline command. Please check the URL (" + localStorage.getItem('is_online--url') + "&offline=1) and try again.");
+                    $enabled.prop('checked', false);
+                }
+            });
+        };
+
+        /**
          * On Form save
          * @return void
          */
@@ -100,6 +145,7 @@ var remote = require('remote');
                 e.preventDefault();
 
                 var error = false;
+                flatline = false;
                 clearTimeout(timeout);
 
                 $url.removeClass('input-error').parent().removeClass('has-error');
@@ -118,9 +164,24 @@ var remote = require('remote');
 
                 if (!error) {
                     setSettings();
+
+                    alert('Settings saved');
+                    window.hide();
+
                     sendHeartBeat();
                     performCPR();
                 }
+            });
+        };
+
+        /**
+         * On go offline button click
+         * @return void
+         */
+        var goOffline = function() {
+            $go_offline.click(function(e) {
+                e.preventDefault();
+                sendFlatline();
             });
         };
 
@@ -130,24 +191,10 @@ var remote = require('remote');
          */
         var performCPR = function() {
             if ($enabled.is(":checked")) {
-                sendHeartBeat(); //localStorage.getItem('is_online--interval') * 60000
-                timeout = setTimeout(performCPR, 1000);
+                sendHeartBeat();
+                clearTimeout(timeout);
+                timeout = setTimeout(performCPR, localStorage.getItem('is_online--interval') * 60000);
             }
-        };
-
-
-        /**
-         * Set settings to localstorage
-         * @return void
-         */
-        var setSettings = function() {
-            localStorage.setItem('is_online--url', $.trim($url.val()));
-            localStorage.setItem('is_online--interval', $.trim($interval.val()));
-            localStorage.setItem('is_online--enabled', $enabled.is(":checked"));
-            alert('Settings saved');
-
-            var window = remote.getCurrentWindow();
-            window.hide();
         };
 
         /**
@@ -156,9 +203,9 @@ var remote = require('remote');
          */
         function updateHeartbeat(expires_on) {
             $heartbeat.html(getDateTime());
+            $heartbeat.prop('title', 'Expires: ' + expires_on);
             setHeartbeatExpiry(expires_on);
             toggleGoOfflineButton();
-            $heartbeat.prop('title', 'Expires: ' + expires_on);
         };
 
         /**
@@ -181,41 +228,6 @@ var remote = require('remote');
             return (num >= 0 && num < 10) ? "0" + num : num + "";
         };
 
-        /**
-         * Misc help fuctions
-         * @return void
-         */
-        var helpers = function() {
-            $(document).on('click', 'a[href^="http"]', function(event) {
-                event.preventDefault();
-                shell.openExternal(this.href);
-            });
-        };
-
-        var goOffline = function() {
-            $go_offline.click(function(e) {
-                e.preventDefault();
-                sendFlatline();
-            });
-        };
-
-        var sendFlatline = function() {
-            request(localStorage.getItem('is_online--url') + "&offline=1", function(error, response, body) {
-                if (!error && response.statusCode == 200) {
-                    var body = $.parseJSON(body);
-                    if (body.success === true) {
-                        console.log('lol');
-                        setHeartbeatExpiry(false);
-                        toggleGoOfflineButton();
-                    }
-                } else {
-                    alert("Ooops! There was a problem with sending the offline command. Please check the URL and try again.");
-                    $enabled.prop('checked', false);
-                }
-            });
-        };
-
-
         return {
             init: function() {
                 helpers();
@@ -233,7 +245,6 @@ var remote = require('remote');
     }();
 
     $(document).ready(function() {
-
         App.init();
     });
 
