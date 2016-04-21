@@ -1,23 +1,31 @@
 {
-  "name": "AreYouOnline",
-  "description": "A simple app to ping a given url every x minutes so your friends/family/colleagues know if you're online",
-  "version": "3.0.0",
-  "keywords": ["is", "kingsley", "online", "online-checker", "online checker", "electron", "php"],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/kingsloi/iskingsley.online.git"
-  },
-  "dependencies": {
-    "menubar": "*"
-  },
   "devDependencies": {
-    "electron-packager": "^6.0.2",
-    "electron-prebuilt": "^0.37.6"
+    "asar": "^0.10.0",
+    "chai": "^3.5.0",
+    "electron-mocha": "^1.0.0",
+    "electron-prebuilt": "^0.37.6",
+    "fs-jetpack": "^0.7.0",
+    "gulp": "^3.9.0",
+    "gulp-batch": "^1.0.5",
+    "gulp-sass": "^2.2.0",
+    "gulp-plumber": "^1.1.0",
+    "gulp-util": "^3.0.6",
+    "gulp-watch": "^4.3.5",
+    "q": "^1.4.1",
+    "rollup": "^0.25.4",
+    "yargs": "^4.2.0"
   },
-  "main": "main.js",
+  "optionalDependencies": {
+    "appdmg": "^0.3.2",
+    "rcedit": "^0.5.0"
+  },
   "scripts": {
-    "build": "electron-packager . 'Are You Online' --platform=darwin --arch=x64 --version=0.37.6 --icon=Icon.icns --out=../build/",
-    "start": "electron ."
-  },
-  "license": "MIT"
+    "postinstall": "cd app && npm install",
+    "build": "gulp build",
+    "release": "gulp release --env=production",
+    "start": "gulp start",
+    "pretest": "gulp build --env=test",
+    "test": "electron-mocha build --renderer",
+    "install-native": "node ./tasks/install_native_module"
+  }
 }

@@ -1,6 +1,8 @@
+@import "kube";
+
 @font-face {
     font-family: "Open Sans";
-    src: url(fonts/OpenSans-Light.ttf) format("truetype");
+    src: url(../fonts/OpenSans-Light.ttf) format("truetype");
     font-style: normal;
 }
 
@@ -9,20 +11,21 @@
     font-family: 'Open Sans', sans-serif;
 }
 
-.forms,
-.forms section {
+.forms {
     margin-bottom: 15px;
+
+    section {
+        margin-bottom: 15px;
+    }
 }
 
-input[type="email"],
-input[type="number"],
-input[type="search"],
-input[type="text"],
-input[type="tel"],
-input[type="url"],
-input[type="password"],
-textarea,
-select {
+input {
+    &[type="email"], &[type="number"], &[type="search"], &[type="text"], &[type="tel"], &[type="url"], &[type="password"] {
+        font-family: 'Open Sans', sans-serif;
+    }
+}
+
+textarea, select {
     font-family: 'Open Sans', sans-serif;
 }
 
@@ -40,11 +43,11 @@ section.has-error .error {
 
 .additional-info {
     text-align: right;
-}
 
-.additional-info li {
-    font-size: 0.75em;
-    display: block;
+    li {
+        font-size: 0.75em;
+        display: block;
+    }
 }
 
 .heartbeat__value {

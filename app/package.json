@@ -1,0 +1,41 @@
+{
+  "name": "AreYouOnline",
+  "productName": "Are You Online?",
+  "description": "A simple app to ping a given url every x minutes so your friends/family/colleagues know if you're online",
+  "keywords": [
+    "is",
+    "kingsley",
+    "online",
+    "online-checker",
+    "online checker",
+    "electron",
+    "php"
+  ],
+  "version": "3.1.0",
+  "author": "Kingsley Raspe",
+  "copyright": "© Kingsley Raspe",
+  "main": "background.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kingsloi/iskingsley.online.git"
+  },
+  "dependencies": {
+    "fs-jetpack": "^0.7.0",
+    "jquery": "^2.2.3",
+    "menubar": "*",
+    "shell": "^0.3.2",
+    "superagent": "^1.8.3"
+  },
+  "packageNameTemplate": "{{name}}-v{{version}}-{{platform}}-{{arch}}",
+  "osx": {
+    "build": "1",
+    "identifier": "com.example.electron-boilerplate",
+    "LSApplicationCategoryType": "public.app-category.productivity",
+    "//codeSignIdentitiy": {
+      "dmg": "Developer ID Application: Company Name (APPIDENTITY)",
+      "MAS": "3rd Party Mac Developer Application: Company Name (APPIDENTITY)",
+      "MASInstaller": "3rd Party Mac Developer Installer: Company Name (APPIDENTITY)"
+    }
+  },
+  "license": "MIT"
+}
