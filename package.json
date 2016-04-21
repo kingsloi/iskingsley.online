@@ -16,8 +16,8 @@
   },
   "main": "main.js",
   "scripts": {
-    "build": "electron-packager ./src/ 'Are You Online' --platform=darwin --arch=x64 --version=0.37.6 --icon=Icon.icns --out=../build/",
-    "start": "electron ./src/"
+    "build": "electron-packager . 'Are You Online' --platform=darwin --arch=x64 --version=0.37.6 --icon=Icon.icns --out=../build/",
+    "start": "electron ."
   },
   "license": "MIT"
 }
