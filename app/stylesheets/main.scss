@@ -1,7 +1,6 @@
 @import "variables";
 @import "../node_modules/bootstrap-sass/assets/stylesheets/bootstrap";
 @import "theme";
-@import "animate";
 
 @font-face {
     font-family: "Open Sans";
@@ -11,25 +10,39 @@
 
 html,
 body {
-    background-color: transparent;
+    height: 100%;
+    width: 100%;
 }
 
 #app {
-    padding: 1em;
+    padding: 0.75em;
     font-family: 'Open Sans', sans-serif;
+    position: relative;
 }
 
 .additional-info {
     text-align: right;
+    position: absolute;
+    bottom: 5px;
+    right: 25px;
 
     li {
-        font-size: 0.75em;
+        font-size: 0.5em;
         display: block;
+
+        + li {
+            margin-top: 5px;
+        }
     }
 }
 
 .heartbeat__value {
-    font-style: italic;
+    display: inline-block;
+}
+
+.beat {
+    -webkit-animation: heartbeat 1s 3;
+    animation: heartbeat 1s 3;
 }
 
 .heart {
@@ -54,14 +67,15 @@ body {
 }
 
 .model {
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 1);
     position: absolute;
     width: 100%;
     height: 100%;
     top: 0;
     left: 0;
     z-index: 10;
-    display: none;
+    opacity: 0;
+    visibility: hidden;
 
     &.animated {
         display: flex;
@@ -72,4 +86,63 @@ body {
 
 #save {
     display: none;
+}
+
+.exit-application {
+    position: absolute;
+    top: 5px;
+    right: 15px;
+    z-index: 2;
+
+    a {
+        font-size: 1.5em;
+        font-family: sans-serif;
+        font-weight: bold;
+        color: #333;
+
+        &:hover {
+            text-decoration: none;
+        }
+    }
+}
+
+.fadeinout {
+    animation: fadeinout 0.5s linear 1 forwards;
+}
+
+@keyframes heartbeat {
+    92% {
+        transform: scale(1, 1);
+    }
+
+    94% {
+        transform: scale(1.2, 1.2);
+    }
+
+    96% {
+        transform: scale(1, 1);
+    }
+
+    98% {
+        transform: scale(1.1, 1.1);
+    }
+
+    100% {
+        transform: scale(1, 1);
+    }
+}
+
+@keyframes fadeinout {
+    0% {
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    100% {
+        opacity: 0;
+    }
 }

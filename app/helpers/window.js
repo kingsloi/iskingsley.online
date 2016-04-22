@@ -10,6 +10,9 @@ import path from 'path';
 export default function(name, options) {
 	return new menubar({
 		'index': 'file://' + __dirname + '/app.html',
-		'tooltip': 'Are You Online?'
+		'tooltip': 'Are You Online?',
+		'width': 350,
+		'height': 285,
+		'transparent': false
 	});
 }

@@ -1,7 +1,6 @@
 import os from 'os';
 import request from 'superagent';
 
-import $ from 'jquery';
 import {
     remote,
     ipcRenderer
@@ -15,16 +14,16 @@ var ipc = ipcRenderer;
 var shell = remote.shell;
 var appDir = jetpack.cwd(app.getAppPath());
 
-
 console.log('The author of this app is:', appDir.read('package.json', 'json').author);
 
 (function($) {
+
     'use strict';
+
     var App = function() {
 
         var timeout;
         var flatline = false;
-        var heartbeat_timeout;
         var heartbeat_expires_on;
 
         var $save = $('#save');
@@ -80,6 +79,14 @@ console.log('The author of this app is:', appDir.read('package.json', 'json').au
                     $enabled.prop('checked', true);
                 }
             }
+            if (localStorage.getItem('is_online--heartbeat-expiry')) {
+                var expiry = localStorage.getItem('is_online--heartbeat-expiry');
+                console.log(expiry);
+                if (expiry !== false) {
+                    setHeartbeatExpiry(expiry);
+                    updateHeartbeat(false, expiry);
+                }
+            }
         };
 
         /**
@@ -98,9 +105,18 @@ console.log('The author of this app is:', appDir.read('package.json', 'json').au
             }
 
             $go_offline.show();
-            clearTimeout(heartbeat_timeout);
-            heartbeat_timeout = setTimeout(toggleGoOfflineButton, 1000);
+
             return false;
+        };
+
+        /**
+         * Tasks executed by main process
+         * @return void
+         */
+        var registerIpcEvents = function() {
+            ipc.on('toggleGoOfflineButton', function(event, message) {
+                toggleGoOfflineButton();
+            });
         };
 
         /**
@@ -145,7 +161,8 @@ console.log('The author of this app is:', appDir.read('package.json', 'json').au
                         if (body.success === true) {
                             setHeartbeatExpiry(false);
                             flatline = true;
-                            toggleGoOfflineButton();
+                            showModel('success');
+                            toggleGoOfflineButton('hide');
                         }
                         return true;
                     }
@@ -181,19 +198,15 @@ console.log('The author of this app is:', appDir.read('package.json', 'json').au
                 }
 
                 if (!error) {
-                    setSettings();
+                    toggleSaveButton('hide');
 
-                    $model.animateCss('fadeInDownBig');
+                    setSettings();
+                    showModel('success');
 
                     if ($enabled.is(":checked")) {
                         sendHeartBeat();
                         performCPR();
                     }
-
-                    setTimeout(function() {
-                        $model.animateCss('fadeOutUpBig');
-                        toggleSaveButton('hide');
-                    }, 1000);
                 }
             });
         };
@@ -225,15 +238,34 @@ console.log('The author of this app is:', appDir.read('package.json', 'json').au
          * Update last ping timestamp
          * @return void
          */
-        function updateHeartbeat(expires_on) {
-            $heartbeat.html(getDateTime());
+        function updateHeartbeat(expires_on, values = false) {
+
+            var heartbeat_on = getDateTime();
+            var heartbeat_expiry = expires_on;
+
+            if (values) {
+
+                heartbeat_on = values.heartbeat_on;
+                heartbeat_expiry = values.expires_on
+            }
+
+            $heartbeat.html(heartbeat_on);
             $heartbeat.prop('title', 'Expires: ' + expires_on);
+            $heartbeat.animateCss('beat');
+
             setHeartbeatExpiry(expires_on);
             toggleGoOfflineButton();
+
+            localStorage.setItem('is_online--heartbeat-expiry', JSON.stringify({
+                'heartbeat_on': heartbeat_on,
+                'heartbeat_expiry': heartbeat_expiry
+            }));
         };
 
         /**
-         *
+         * Check for user input on any of the inputs, showing settings button
+         * if text/checkbox gets touched by the user
+         * @return void
          */
         var checkForInput = function() {
             // text written
@@ -259,9 +291,16 @@ console.log('The author of this app is:', appDir.read('package.json', 'json').au
             });
         };
 
+        function showModel(type) {
+            if (type == "success") {
+                $model.animateCss('fadeinout');
+            }
+
+        }
+
         /**
-         * [toggleSaveButton description]
-         * @return {[type]} [description]
+         * Toggle save button
+         * @return boolean | void
          */
         function toggleSaveButton(type = 'show') {
             if (type == 'show' && $save.is(":visible")) {
@@ -294,20 +333,12 @@ console.log('The author of this app is:', appDir.read('package.json', 'json').au
         return {
             init: function() {
 
-                $.fn.extend({
-                    animateCss: function(animationName) {
-                        var animationEnd = 'webkitAnimationEnd mozAnimationEnd MSAnimationEnd oanimationend animationend';
-                        $(this).addClass('animated ' + animationName).one(animationEnd, function() {
-                            $(this).removeClass('animated ' + animationName);
-                        });
-                    }
-                });
-
                 checkForInput();
                 getSettings();
                 saveSettings();
                 goOffline();
                 toggleGoOfflineButton();
+                registerIpcEvents();
 
                 if ($enabled.is(":checked")) {
                     sendHeartBeat();

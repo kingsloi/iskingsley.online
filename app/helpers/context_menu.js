@@ -5,6 +5,7 @@
     'use strict';
 
     var remote = require('electron').remote;
+    var shell = require('electron').shell;
     var Menu = remote.Menu;
     var MenuItem = remote.MenuItem;
 
@@ -33,25 +34,41 @@
         }
     });
 
-    var normalMenu = new Menu();
-    normalMenu.append(copy);
+    var author = new MenuItem({
+        label: "Made with \u2665 by Kingsley Raspe",
+        click: function() {
+            shell.openExternal('http://kingsleyraspe.co.uk');
+        }
+    });
+
+    var copyMenu = new Menu();
+    copyMenu.append(copy);
+    copyMenu.append(author);
 
     var textEditingMenu = new Menu();
     textEditingMenu.append(cut);
     textEditingMenu.append(copy);
     textEditingMenu.append(paste);
+    textEditingMenu.append(author);
+
+    var authorOnly = new Menu();
+    authorOnly.append(author);
 
     document.addEventListener('contextmenu', function(e) {
         switch (e.target.nodeName) {
             case 'TEXTAREA':
             case 'INPUT':
                 e.preventDefault();
+
                 textEditingMenu.popup(remote.getCurrentWindow());
                 break;
             default:
+
                 if (isAnyTextSelected()) {
                     e.preventDefault();
-                    normalMenu.popup(remote.getCurrentWindow());
+                    copyMenu.popup(remote.getCurrentWindow());
+                } else {
+                    authorOnly.popup(remote.getCurrentWindow());
                 }
         }
     }, false);
