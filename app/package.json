@@ -20,9 +20,10 @@
     "url": "https://github.com/kingsloi/iskingsley.online.git"
   },
   "dependencies": {
+    "bootstrap-sass": "^3.3.6",
     "fs-jetpack": "^0.7.0",
     "jquery": "^2.2.3",
-    "menubar": "*",
+    "menubar": "github:maxogden/menubar#pull/117/head",
     "shell": "^0.3.2",
     "superagent": "^1.8.3"
   },
@@ -37,5 +38,8 @@
       "MASInstaller": "3rd Party Mac Developer Installer: Company Name (APPIDENTITY)"
     }
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "menubar": "github:maxogden/menubar#pull/117/head"
+  }
 }

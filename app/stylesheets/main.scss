@@ -1,4 +1,7 @@
-@import "kube";
+@import "variables";
+@import "../node_modules/bootstrap-sass/assets/stylesheets/bootstrap";
+@import "theme";
+@import "animate";
 
 @font-face {
     font-family: "Open Sans";
@@ -6,39 +9,14 @@
     font-style: normal;
 }
 
+html,
+body {
+    background-color: transparent;
+}
+
 #app {
     padding: 1em;
     font-family: 'Open Sans', sans-serif;
-}
-
-.forms {
-    margin-bottom: 15px;
-
-    section {
-        margin-bottom: 15px;
-    }
-}
-
-input {
-    &[type="email"], &[type="number"], &[type="search"], &[type="text"], &[type="tel"], &[type="url"], &[type="password"] {
-        font-family: 'Open Sans', sans-serif;
-    }
-}
-
-textarea, select {
-    font-family: 'Open Sans', sans-serif;
-}
-
-label .error {
-    display: none;
-}
-
-section.has-error .error {
-    display: inline-block;
-}
-
-.form-group.has-error .help-block {
-    display: block;
 }
 
 .additional-info {
@@ -60,5 +38,38 @@ section.has-error .error {
 }
 
 .actions {
+    @extend .form-group;
+
     text-align: right;
+}
+
+.checkbox {
+    input {
+        margin-top: 5px;
+    }
+
+    label {
+        font-size: 1.25em;
+    }
+}
+
+.model {
+    background: rgba(255, 255, 255, 0.85);
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 10;
+    display: none;
+
+    &.animated {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+#save {
+    display: none;
 }

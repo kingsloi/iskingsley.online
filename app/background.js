@@ -1,13 +1,21 @@
-import { app, Menu } from 'electron';
+import {
+	app,
+	Menu,
+	Tray,
+	ipcMain as ipc
+} from 'electron';
 import createWindow from './helpers/window';
 import env from './env';
+import path from 'path';
 
-var opts ={
-    "index": "./app.js"
-};
 
 var mb = createWindow();
-
 mb.on('after-create-window', function() {
-    mb.window.openDevTools()
+	if (env.name !== 'production') {
+		mb.window.openDevTools();
+	}
+
+});
+mb.on('after-show', function() {
+	console.log(mb.window.webContents.send('ping', 'whoooooooh!'));
 });
