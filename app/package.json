@@ -1,6 +1,6 @@
 {
   "name": "AreYouOnline",
-  "productName": "Are You Online?",
+  "productName": "Are You Online",
   "description": "A simple app to ping a given url every x minutes so your friends/family/colleagues know if you're online",
   "keywords": [
     "is",
