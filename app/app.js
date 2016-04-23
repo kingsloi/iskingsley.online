@@ -161,7 +161,7 @@ var ipc = ipcRenderer;
          */
         var toggleGoOfflineButton = function () {
             var now = new Date();
-            var expiry = (getHeartbeatExpiry() ? new Date(getHeartbeatExpiry()) : false);
+            var expiry = ((getHeartbeatExpiry()) ? new Date(getHeartbeatExpiry()) : false);
 
             if (now > expiry || expiry === false || flatline === true) {
                 $enabled.prop('checked', false);
@@ -179,7 +179,7 @@ var ipc = ipcRenderer;
          * @return void
          */
         var registerIpcEvents = function () {
-            ipc.on('OnCreateOrShowEvents', function (event, message) {
+            ipc.on('OnCreateOrShowEvents', function () {
                 getLastHeartbeat();
                 toggleGoOfflineButton();
                 toggleDisconnectedModel();
@@ -199,9 +199,9 @@ var ipc = ipcRenderer;
             request
                 .get(localStorage.getItem('is_online--url'))
                 .end(function (error, response) {
-                    if (response.type == "application/json") {
+                    if (response.type === "application/json" && !error) {
                         var body = tryParseJSON(response.text);
-                        if (response.status == 200 && body.success === true) {
+                        if (response.status === 200 && body.success === true) {
                             errors.heartbeat.count = 0;
                             updateHeartbeat(body.expires_on);
                             return true;
@@ -235,9 +235,9 @@ var ipc = ipcRenderer;
                     offline: '1'
                 }).end(function (error, response) {
 
-                    if (response.type == "application/json") {
+                    if (response.type === "application/json" && !error) {
                         var body = tryParseJSON(response.text);
-                        if (response.status == 200 && body.success === true) {
+                        if (response.status === 200 && body.success === true) {
                             flatline = true;
                             showModel('success');
                             errors.flatline.count = 0;
