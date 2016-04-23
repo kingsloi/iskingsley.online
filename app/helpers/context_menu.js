@@ -59,11 +59,9 @@
             case 'TEXTAREA':
             case 'INPUT':
                 e.preventDefault();
-
                 textEditingMenu.popup(remote.getCurrentWindow());
                 break;
             default:
-
                 if (isAnyTextSelected()) {
                     e.preventDefault();
                     copyMenu.popup(remote.getCurrentWindow());

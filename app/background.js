@@ -4,29 +4,42 @@ import {
 	Tray,
 	ipcMain as ipc
 } from 'electron';
-import createWindow from './helpers/window';
+import createMenubar from './helpers/window';
 import env from './env';
 import path from 'path';
 
-var mb = createWindow();
+/**
+ * Create menu bar
+ * @type Object
+ */
+var menubar = createMenubar({
+	'index': 'file://' + __dirname + '/app.html',
+	'tooltip': 'Are You Online?',
+	'width': 350,
+	'height': 300,
+	'transparent': false
+});
 
-mb.on('after-create-window', function() {
+/**
+ * After creating the menubar window
+ * @return void
+ */
+menubar.on('after-create-window', function() {
 	if (env.name !== 'production') {
-		mb.window.openDevTools();
+		menubar.window.openDevTools();
 	} else {
-		mb.window.setResizable(false);
+		menubar.window.setResizable(false);
 	}
 
-	mb.window.webContents.send('toggleGoOfflineButton');
-
-	mb.window.webContents.on('will-navigate', function(ev) {
-		ev.preventDefault()
-	});
-
+	// If heartbeat hasn't expired, show offline button?
+	menubar.window.webContents.send('OnCreateOrShowEvents');
 });
 
-mb.on('after-show', function() {
-	mb.window.webContents.send('toggleGoOfflineButton');
+/**
+ * After window has been shown
+ * @return void
+ */
+menubar.on('after-show', function() {
+	// If heartbeat hasn't expired, show offline button?
+	menubar.window.webContents.send('OnCreateOrShowEvents');
 });
-
-will - navigate

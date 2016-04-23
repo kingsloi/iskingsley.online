@@ -4,21 +4,8 @@
         <title>Are you online?</title>
         <link href="stylesheets/main.css" rel="stylesheet">
     </head>
-    <body id="app">
+    <body id="app" class="">
         <div class="container">
-
-            <div class="model" id="model">
-                <div class="icon svg">
-                    <svg height="72px" width="72px" xmlns="http://www.w3.org/2000/svg">
-                        <g fill="none" stroke="#8EC343" stroke-width="2">
-                            <circle cx="36" cy="36" r="35" style="stroke-dasharray:240px, 240px; stroke-dashoffset: 480px;">
-                            </circle>
-                            <path d="M17.417,37.778l9.93,9.909l25.444-25.393" style="stroke-dasharray:50px, 50px; stroke-dashoffset: 0px;">
-                            </path>
-                        </g>
-                    </svg>
-                </div>
-            </div>
 
             <div class="exit-application" id="exit-application">
                 <a href="#">&times;</a>
@@ -49,14 +36,38 @@
                 </div>
 
                 <div class="actions">
-                    <button class="btn btn-success btn-xs" id="save" type="submit">Save Settings</button>
+                    <button class="btn btn-success btn-xs" id="save" type="submit">Save</button>
                     <button class="btn btn-danger btn-xs" id="go-offline" type="button">Go Offline</button>
                 </div>
             </form>
 
             <ul class="additional-info">
+                <li><a href="#" id="reset-settings">Reset</a></li>
                 <li class="heartbeat">Last ping: <span class="heartbeat__value">-</span></li>
             </ul>
+        </div>
+
+        <div class="model" id="model">
+            <div class="icons">
+                <svg height="72px" width="72px" xmlns="http://www.w3.org/2000/svg" id="success">
+                    <g fill="none" stroke="#43ac6a" stroke-width="2">
+                        <circle cx="36" cy="36" r="35" style="stroke-dasharray:240px, 240px; stroke-dashoffset: 480px;">
+                        </circle>
+                        <path d="M17.417,37.778l9.93,9.909l25.444-25.393" style="stroke-dasharray:50px, 50px; stroke-dashoffset: 0px;">
+                        </path>
+                    </g>
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="72px" height="72px" viewBox="6.866 6.444 72 72" id="failure">
+                    <g fill="none" stroke="#F04124" stroke-width="2">
+                        <path d="M42.866,7.506c-19.318,0-35.002,15.681-35.002,35c0,19.317,15.684,35,35.002,35c19.315,0,34.997-15.683,34.997-35
+                    C77.863,23.188,62.182,7.506,42.866,7.506z M46.365,60.006h-7v-6.999h7V60.006z M46.365,46.007h-7v-21h7V46.007z"/>
+                    </g>
+                </svg>
+            </div>
+            <div id="disconnected-warning">
+                <p>You're currently offline. Pinging will resume when you're back online.</p>
+                <a href="#" id="close-model">&times;</a>
+            </div>
         </div>
 
         <script>

@@ -1,21 +1,20 @@
+// Imports
 import os from 'os';
 import request from 'superagent';
-
 import {
     remote,
     ipcRenderer
 } from 'electron';
-
 import jetpack from 'fs-jetpack';
 import env from './env';
 
+// Globals
 var app = remote.app;
 var ipc = ipcRenderer;
 var shell = remote.shell;
 var appDir = jetpack.cwd(app.getAppPath());
 
-console.log('The author of this app is:', appDir.read('package.json', 'json').author);
-
+// App
 (function($) {
 
     'use strict';
@@ -24,25 +23,61 @@ console.log('The author of this app is:', appDir.read('package.json', 'json').au
 
         var timeout;
         var flatline = false;
-        var heartbeat_expires_on;
 
+
+        var $app = $("#app");
         var $save = $('#save');
         var $model = $(".model");
         var $url = $("#url__value");
         var $author = $(".author__url");
+        var $reset = $("#reset-settings");
         var $go_offline = $('#go-offline');
+        var $actions = $('.actions button');
         var $enabled = $("#enabled__value");
         var $interval = $("#interval__value");
         var window = remote.getCurrentWindow();
         var $heartbeat = $(".heartbeat__value");
 
+        var errors = {
+            heartbeat: {
+                count: 0,
+                message: "Ooops! There was a problem with the URL you've supplied. Please check it and try again!",
+                badRequest: "Heartbeat refused by the server. Incorrect password maybe?"
+            },
+            flatline: {
+                count: 0,
+                message: "Ooops! There was a problem with sending the offline command. Please check the URL (" + localStorage.getItem('is_online--url') + "&offline=1) and try again.",
+                badRequest: "Flatline refused by the server. Incorrect password maybe?"
+            }
+        };
+
+
+
+        /**
+         * Set heartbeat datetime
+         * @param heartbeat_datetime date/time of last ping
+         */
+        var setHeartbeatDateTime = function(heartbeat_datetime) {
+            localStorage.setItem('is_online--heartbeat', heartbeat_datetime);
+        };
+
+        /**
+         * Get last heartbeat
+         * @return string | false
+         */
+        var getHeartbeatDateTime = function() {
+            if (localStorage.getItem('is_online--heartbeat')) {
+                return localStorage.getItem('is_online--heartbeat');
+            }
+            return false;
+        };
 
         /**
          * Set heartbeat expiry
          * @param heartbeat expiry datetime from the server
          */
         var setHeartbeatExpiry = function(heartbeat_expiry) {
-            heartbeat_expires_on = heartbeat_expiry;
+            localStorage.setItem('is_online--heartbeat-expires-on', heartbeat_expiry);
         };
 
         /**
@@ -50,8 +85,32 @@ console.log('The author of this app is:', appDir.read('package.json', 'json').au
          * @return string | false
          */
         var getHeartbeatExpiry = function() {
-            return (heartbeat_expires_on ? heartbeat_expires_on : false);
+            if (localStorage.getItem('is_online--heartbeat-expires-on')) {
+                return localStorage.getItem('is_online--heartbeat-expires-on');
+            }
+            return false;
         };
+
+        /**
+         * Get last heartbeat
+         * @return void
+         */
+        var getLastHeartbeat = function() {
+            if (getHeartbeatDateTime()) {
+                $heartbeat.html(getHeartbeatDateTime());
+                $heartbeat.prop('title', 'Expires: ' + getHeartbeatExpiry());
+            }
+        };
+
+        /**
+         * Clear settings from localstorage
+         * @return void
+         */
+        var removeSettings = function() {
+            localStorage.removeItem('is_online--url');
+            localStorage.removeItem('is_online--interval');
+            localStorage.removeItem('is_online--enabled');
+        }
 
         /**
          * Set settings to localstorage
@@ -75,19 +134,35 @@ console.log('The author of this app is:', appDir.read('package.json', 'json').au
                 $interval.val(localStorage.getItem('is_online--interval'));
             }
             if (localStorage.getItem('is_online--enabled')) {
-                if (localStorage.getItem('is_online--enabled') == "true") {
+                if (localStorage.getItem('is_online--enabled') === true) {
                     $enabled.prop('checked', true);
                 }
             }
-            if (localStorage.getItem('is_online--heartbeat-expiry')) {
-                var expiry = localStorage.getItem('is_online--heartbeat-expiry');
-                console.log(expiry);
-                if (expiry !== false) {
-                    setHeartbeatExpiry(expiry);
-                    updateHeartbeat(false, expiry);
-                }
-            }
         };
+
+        /**
+         * Is user connected to wifi/lan?
+         * @return boolean
+         */
+        function isUserConnectedToInternet() {
+            return navigator.onLine ? true : false;
+        }
+
+        /**
+         * Toggle disconnected model
+         * @return boolean Whether online or offline
+         */
+        var toggleDisconnectedModel = function() {
+            var online = isUserConnectedToInternet();
+            if (!online) {
+                showModel('disconnected');
+                $actions.attr("disabled", true);
+                return false;
+            }
+            hideModel();
+            $actions.attr("disabled", false);
+            return true;
+        }
 
         /**
          * Show/hide go offline button if heartbeat has/hasn't expired
@@ -105,7 +180,6 @@ console.log('The author of this app is:', appDir.read('package.json', 'json').au
             }
 
             $go_offline.show();
-
             return false;
         };
 
@@ -114,66 +188,83 @@ console.log('The author of this app is:', appDir.read('package.json', 'json').au
          * @return void
          */
         var registerIpcEvents = function() {
-            ipc.on('toggleGoOfflineButton', function(event, message) {
+            ipc.on('OnCreateOrShowEvents', function(event, message) {
+                getLastHeartbeat();
                 toggleGoOfflineButton();
+                toggleDisconnectedModel();
             });
         };
 
         /**
          * Send heartbeat to specified URL
-         * @return void
+         * @return boolean
          */
         var sendHeartBeat = function() {
+            if (!isUserConnectedToInternet()) return false;
+            var badRequest = false;
 
             request
                 .get(localStorage.getItem('is_online--url'))
                 .end(function(error, response) {
-                    if (!error && response.status == 200) {
-                        console.log(response.type);
-                        var body = $.parseJSON(response.text);
-
-                        if (body.success === true) {
+                    if (response.type == "application/json") {
+                        var body = tryParseJSON(response.text);
+                        if (response.status == 200 && body.success === true) {
+                            errors.heartbeat.count = 0;
                             updateHeartbeat(body.expires_on);
+                            return true;
                         }
-                        return true;
+                        badRequest = true;
                     }
 
-                    alert("Ooops! There was a problem with the URL you've supplied. Please check it and try again!");
-                    $enabled.prop('checked', false);
-                    clearTimeout(timeout);
+                    errors.heartbeat.count++;
+                    if (errors.heartbeat.count > 2) {
+                        alert((!badRequest) ? errors.heartbeat.message : errors.heartbeat.badRequest);
+                        $enabled.prop('checked', false);
+                        clearTimeout(timeout);
+                    }
                     return false;
                 });
         };
 
         /**
          * Send offline signal to server
-         * @return void
+         * @return boolean
          */
         var sendFlatline = function() {
+            if (!isUserConnectedToInternet()) return false;
+            var badRequest = false;
 
             request
                 .get(localStorage.getItem('is_online--url'))
                 .query({
                     offline: '1'
                 }).end(function(error, response) {
-                    if (!error && response.status == 200) {
-                        var body = $.parseJSON(response.text);
-                        if (body.success === true) {
-                            setHeartbeatExpiry(false);
+
+                    if (response.type == "application/json") {
+                        var body = tryParseJSON(response.text);
+                        if (response.status == 200 && body.success === true) {
                             flatline = true;
                             showModel('success');
+                            errors.flatline.count = 0;
+                            setHeartbeatExpiry(false);
                             toggleGoOfflineButton('hide');
+                            return true;
                         }
-                        return true;
+                        badRequest = true;
                     }
-                    alert("Ooops! There was a problem with sending the offline command. Please check the URL (" + localStorage.getItem('is_online--url') + "&offline=1) and try again.");
-                    $enabled.prop('checked', false);
+
+                    errors.flatline.count++;
+                    if (errors.flatline.count > 2) {
+                        alert((!badRequest) ? errors.flatline.message : errors.flatline.badRequest);
+                        $enabled.prop('checked', false);
+                    }
+                    return false;
                 })
         };
 
         /**
          * On Form save
-         * @return void
+         * @return boolean
          */
         var saveSettings = function() {
             $('#settings').submit(function(e) {
@@ -198,16 +289,16 @@ console.log('The author of this app is:', appDir.read('package.json', 'json').au
                 }
 
                 if (!error) {
-                    toggleSaveButton('hide');
-
-                    setSettings();
                     showModel('success');
-
+                    setSettings();
+                    toggleSaveButton('hide');
                     if ($enabled.is(":checked")) {
-                        sendHeartBeat();
                         performCPR();
                     }
+                    return true;
                 }
+                showModel('failure');
+                return false;
             });
         };
 
@@ -238,29 +329,19 @@ console.log('The author of this app is:', appDir.read('package.json', 'json').au
          * Update last ping timestamp
          * @return void
          */
-        function updateHeartbeat(expires_on, values = false) {
+        function updateHeartbeat(expires_on, override = false) {
 
             var heartbeat_on = getDateTime();
             var heartbeat_expiry = expires_on;
-
-            if (values) {
-
-                heartbeat_on = values.heartbeat_on;
-                heartbeat_expiry = values.expires_on
-            }
 
             $heartbeat.html(heartbeat_on);
             $heartbeat.prop('title', 'Expires: ' + expires_on);
             $heartbeat.animateCss('beat');
 
+            setHeartbeatDateTime(heartbeat_on);
             setHeartbeatExpiry(expires_on);
             toggleGoOfflineButton();
-
-            localStorage.setItem('is_online--heartbeat-expiry', JSON.stringify({
-                'heartbeat_on': heartbeat_on,
-                'heartbeat_expiry': heartbeat_expiry
-            }));
-        };
+        }
 
         /**
          * Check for user input on any of the inputs, showing settings button
@@ -268,34 +349,105 @@ console.log('The author of this app is:', appDir.read('package.json', 'json').au
          * @return void
          */
         var checkForInput = function() {
-            // text written
             $(':text').keypress(function(e) {
                 toggleSaveButton();
             });
-            //backspace and delete key
             $(':text').keyup(function(e) {
                 if (e.toggleSaveButton == 8 || e.keyCode == 46) {
                     enableSaveBtn();
                 } else {
-                    // rest ignore
                     e.preventDefault();
                 }
             });
-            // text pasted
             $(':text').bind('paste', function(e) {
                 toggleSaveButton();
             });
-            // select element changed
             $(':checkbox').change(function(e) {
                 toggleSaveButton();
             });
         };
 
-        function showModel(type) {
-            if (type == "success") {
-                $model.animateCss('fadeinout');
-            }
+        /**
+         * Exit application
+         * @return void
+         */
+        var registerButtonClicks = function() {
+            $('#close-model').click(function() {
+                hideModel();
+            });
+            $('#exit-application a').click(function() {
+                var exit = confirm("Are you sure you want to exit?");
+                if (exit === true) {
+                    app.quit();
+                }
+            });
+        };
 
+        /**
+         * On clear button click
+         * @return void
+         */
+        var clearSettings = function() {
+            $reset.click(function(e) {
+                e.preventDefault();
+                var reset = confirm("Are you sure you want clear your settings and reset the application?");
+                if (reset === true) {
+                    removeSettings();
+                    location.reload();
+                }
+            });
+        };
+
+        /**
+         * Try parse json
+         * @param  string json json string to validate
+         * @return string | boolean
+         */
+        function tryParseJSON(json) {
+            try {
+                var o = JSON.parse(json);
+
+                // Handle non-exception-throwing cases:
+                // Neither JSON.parse(false) or JSON.parse(1234) throw errors, hence the type-checking,
+                // but... JSON.parse(null) returns 'null', and typeof null === "object",
+                // so we must check for that, too.
+                if (o && typeof o === "object" && o !== null) {
+                    return o;
+                }
+            } catch (e) {
+                console.log(e);
+            }
+            return false;
+        }
+
+        /**
+         * Hide model
+         * @return void
+         */
+        function hideModel() {
+            $model.removeClass('model--is-failure')
+                .removeClass('model--is-success')
+                .removeClass('model--is-disconnected');
+        }
+
+        /**
+         * Show model
+         * @param  string type Type of model to show (success/failure)
+         * @return void
+         */
+        function showModel(type) {
+            hideModel();
+            switch (type) {
+                case 'success':
+                    $model.addClass('model--is-success').animateCss('fadeinout');
+                    break;
+                case 'failure':
+                    $model.addClass('model--is-failure').animateCss('fadeinout');
+                    break;
+                case 'disconnected':
+                    $model.addClass('model--is-disconnected');
+                    break;
+            }
         }
 
         /**
@@ -306,7 +458,6 @@ console.log('The author of this app is:', appDir.read('package.json', 'json').au
             if (type == 'show' && $save.is(":visible")) {
                 return false;
             }
-
             $save.toggle();
         }
 
@@ -319,7 +470,7 @@ console.log('The author of this app is:', appDir.read('package.json', 'json').au
             return [
                 [AddZero(now.getDate()), AddZero(now.getMonth() + 1), now.getFullYear()].join("/"), [AddZero(now.getHours()), AddZero(now.getMinutes())].join(":"), now.getHours() >= 12 ? "PM" : "AM"
             ].join(" ");
-        };
+        }
 
         /**
          * Add a 0 for single-digit date/time values
@@ -328,18 +479,19 @@ console.log('The author of this app is:', appDir.read('package.json', 'json').au
          */
         function AddZero(num) {
             return (num >= 0 && num < 10) ? "0" + num : num + "";
-        };
+        }
 
         return {
             init: function() {
 
+                clearSettings();
                 checkForInput();
                 getSettings();
                 saveSettings();
                 goOffline();
-                toggleGoOfflineButton();
+                registerButtonClicks();
                 registerIpcEvents();
-
+                toggleGoOfflineButton();
                 if ($enabled.is(":checked")) {
                     sendHeartBeat();
                     performCPR();
