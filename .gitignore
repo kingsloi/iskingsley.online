@@ -1,5 +1,3 @@
-src/debug.log
-src/node_modules
 build
 *.zip
 node_modules
@@ -12,3 +10,4 @@ Thumbs.db
 /build/
 /releases/
 /tmp/
+/build

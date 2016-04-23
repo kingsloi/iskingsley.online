@@ -28,7 +28,7 @@ To top it off, it's wrapped into a lovely OSX app so no awkawrd/complicated inst
 ## People using it
 _Using it? Share your site! Fork it, edit this readme, add your site/author, and submit a pull request!_
 - [http://iskingsley.online](http://iskingsley.online)
-- [http://http://isandrea.online](http://isandrea.online)
+- [http://isandrea.online](http://isandrea.online)
 - [http://isdavid.online](http://isdavid.online)
 
 ## Contributing
