@@ -1,41 +1,32 @@
+/*global navigator, localStorage: false, console: false, $: false */
 // Imports
-import os from 'os';
 import request from 'superagent';
-import {
-    remote,
-    ipcRenderer
-} from 'electron';
-import jetpack from 'fs-jetpack';
-import env from './env';
+import remote from 'electron';
+import ipcRenderer from 'electron';
 
 // Globals
 var app = remote.app;
 var ipc = ipcRenderer;
-var shell = remote.shell;
-var appDir = jetpack.cwd(app.getAppPath());
 
 // App
-(function($) {
+(function ($) {
 
     'use strict';
 
-    var App = function() {
+    var App = function () {
 
         var timeout;
         var flatline = false;
 
 
-        var $app = $("#app");
         var $save = $('#save');
         var $model = $(".model");
         var $url = $("#url__value");
-        var $author = $(".author__url");
         var $reset = $("#reset-settings");
         var $go_offline = $('#go-offline');
         var $actions = $('.actions button');
         var $enabled = $("#enabled__value");
         var $interval = $("#interval__value");
-        var window = remote.getCurrentWindow();
         var $heartbeat = $(".heartbeat__value");
 
         var errors = {
@@ -57,7 +48,7 @@ var appDir = jetpack.cwd(app.getAppPath());
          * Set heartbeat datetime
          * @param heartbeat_datetime date/time of last ping
          */
-        var setHeartbeatDateTime = function(heartbeat_datetime) {
+        var setHeartbeatDateTime = function (heartbeat_datetime) {
             localStorage.setItem('is_online--heartbeat', heartbeat_datetime);
         };
 
@@ -65,7 +56,7 @@ var appDir = jetpack.cwd(app.getAppPath());
          * Get last heartbeat
          * @return string | false
          */
-        var getHeartbeatDateTime = function() {
+        var getHeartbeatDateTime = function () {
             if (localStorage.getItem('is_online--heartbeat')) {
                 return localStorage.getItem('is_online--heartbeat');
             }
@@ -76,7 +67,7 @@ var appDir = jetpack.cwd(app.getAppPath());
          * Set heartbeat expiry
          * @param heartbeat expiry datetime from the server
          */
-        var setHeartbeatExpiry = function(heartbeat_expiry) {
+        var setHeartbeatExpiry = function (heartbeat_expiry) {
             localStorage.setItem('is_online--heartbeat-expires-on', heartbeat_expiry);
         };
 
@@ -84,7 +75,7 @@ var appDir = jetpack.cwd(app.getAppPath());
          * Get heartbeat expiry
          * @return string | false
          */
-        var getHeartbeatExpiry = function() {
+        var getHeartbeatExpiry = function () {
             if (localStorage.getItem('is_online--heartbeat-expires-on')) {
                 return localStorage.getItem('is_online--heartbeat-expires-on');
             }
@@ -95,7 +86,7 @@ var appDir = jetpack.cwd(app.getAppPath());
          * Get last heartbeat
          * @return void
          */
-        var getLastHeartbeat = function() {
+        var getLastHeartbeat = function () {
             if (getHeartbeatDateTime()) {
                 $heartbeat.html(getHeartbeatDateTime());
                 $heartbeat.prop('title', 'Expires: ' + getHeartbeatExpiry());
@@ -106,17 +97,17 @@ var appDir = jetpack.cwd(app.getAppPath());
          * Clear settings from localstorage
          * @return void
          */
-        var removeSettings = function() {
+        var removeSettings = function () {
             localStorage.removeItem('is_online--url');
             localStorage.removeItem('is_online--interval');
             localStorage.removeItem('is_online--enabled');
-        }
+        };
 
         /**
          * Set settings to localstorage
          * @return void
          */
-        var setSettings = function() {
+        var setSettings = function () {
             localStorage.setItem('is_online--url', $.trim($url.val()));
             localStorage.setItem('is_online--interval', $.trim($interval.val()));
             localStorage.setItem('is_online--enabled', $enabled.is(":checked"));
@@ -126,7 +117,7 @@ var appDir = jetpack.cwd(app.getAppPath());
          * Get settings from localstorage
          * @return void
          */
-        var getSettings = function() {
+        var getSettings = function () {
             if (localStorage.getItem('is_online--url')) {
                 $url.val(localStorage.getItem('is_online--url'));
             }
@@ -145,14 +136,14 @@ var appDir = jetpack.cwd(app.getAppPath());
          * @return boolean
          */
         function isUserConnectedToInternet() {
-            return navigator.onLine ? true : false;
+            return ((navigator.onLine) ? true : false);
         }
 
         /**
          * Toggle disconnected model
          * @return boolean Whether online or offline
          */
-        var toggleDisconnectedModel = function() {
+        var toggleDisconnectedModel = function () {
             var online = isUserConnectedToInternet();
             if (!online) {
                 showModel('disconnected');
@@ -162,13 +153,13 @@ var appDir = jetpack.cwd(app.getAppPath());
             hideModel();
             $actions.attr("disabled", false);
             return true;
-        }
+        };
 
         /**
          * Show/hide go offline button if heartbeat has/hasn't expired
          * @return boolean Whether heartbeat has expired
          */
-        var toggleGoOfflineButton = function() {
+        var toggleGoOfflineButton = function () {
             var now = new Date();
             var expiry = (getHeartbeatExpiry() ? new Date(getHeartbeatExpiry()) : false);
 
@@ -187,8 +178,8 @@ var appDir = jetpack.cwd(app.getAppPath());
          * Tasks executed by main process
          * @return void
          */
-        var registerIpcEvents = function() {
-            ipc.on('OnCreateOrShowEvents', function(event, message) {
+        var registerIpcEvents = function () {
+            ipc.on('OnCreateOrShowEvents', function (event, message) {
                 getLastHeartbeat();
                 toggleGoOfflineButton();
                 toggleDisconnectedModel();
@@ -199,13 +190,15 @@ var appDir = jetpack.cwd(app.getAppPath());
          * Send heartbeat to specified URL
          * @return boolean
          */
-        var sendHeartBeat = function() {
-            if (!isUserConnectedToInternet()) return false;
+        var sendHeartBeat = function () {
+            if (!isUserConnectedToInternet()) {
+                return false;
+            }
             var badRequest = false;
 
             request
                 .get(localStorage.getItem('is_online--url'))
-                .end(function(error, response) {
+                .end(function (error, response) {
                     if (response.type == "application/json") {
                         var body = tryParseJSON(response.text);
                         if (response.status == 200 && body.success === true) {
@@ -230,15 +223,17 @@ var appDir = jetpack.cwd(app.getAppPath());
          * Send offline signal to server
          * @return boolean
          */
-        var sendFlatline = function() {
-            if (!isUserConnectedToInternet()) return false;
+        var sendFlatline = function () {
+            if (!isUserConnectedToInternet()) {
+                return false;
+            }
             var badRequest = false;
 
             request
                 .get(localStorage.getItem('is_online--url'))
                 .query({
                     offline: '1'
-                }).end(function(error, response) {
+                }).end(function (error, response) {
 
                     if (response.type == "application/json") {
                         var body = tryParseJSON(response.text);
@@ -259,15 +254,15 @@ var appDir = jetpack.cwd(app.getAppPath());
                         $enabled.prop('checked', false);
                     }
                     return false;
-                })
+                });
         };
 
         /**
          * On Form save
          * @return boolean
          */
-        var saveSettings = function() {
-            $('#settings').submit(function(e) {
+        var saveSettings = function () {
+            $('#settings').submit(function (e) {
                 e.preventDefault();
 
                 var error = false;
@@ -306,8 +301,8 @@ var appDir = jetpack.cwd(app.getAppPath());
          * On go offline button click
          * @return void
          */
-        var goOffline = function() {
-            $go_offline.click(function(e) {
+        var goOffline = function () {
+            $go_offline.click(function (e) {
                 e.preventDefault();
                 sendFlatline();
             });
@@ -317,7 +312,7 @@ var appDir = jetpack.cwd(app.getAppPath());
          * Send timed heartbeats
          * @return void
          */
-        var performCPR = function() {
+        var performCPR = function () {
             if ($enabled.is(":checked")) {
                 sendHeartBeat();
                 clearTimeout(timeout);
@@ -348,21 +343,21 @@ var appDir = jetpack.cwd(app.getAppPath());
          * if text/checkbox gets touched by the user
          * @return void
          */
-        var checkForInput = function() {
-            $(':text').keypress(function(e) {
+        var checkForInput = function () {
+            $(':text').keypress(function (e) {
                 toggleSaveButton();
             });
-            $(':text').keyup(function(e) {
+            $(':text').keyup(function (e) {
                 if (e.toggleSaveButton == 8 || e.keyCode == 46) {
                     enableSaveBtn();
                 } else {
                     e.preventDefault();
                 }
             });
-            $(':text').bind('paste', function(e) {
+            $(':text').bind('paste', function (e) {
                 toggleSaveButton();
             });
-            $(':checkbox').change(function(e) {
+            $(':checkbox').change(function (e) {
                 toggleSaveButton();
             });
         };
@@ -371,11 +366,11 @@ var appDir = jetpack.cwd(app.getAppPath());
          * Exit application
          * @return void
          */
-        var registerButtonClicks = function() {
-            $('#close-model').click(function() {
+        var registerButtonClicks = function () {
+            $('#close-model').click(function () {
                 hideModel();
             });
-            $('#exit-application a').click(function() {
+            $('#exit-application a').click(function () {
                 var exit = confirm("Are you sure you want to exit?");
                 if (exit === true) {
                     app.quit();
@@ -387,8 +382,8 @@ var appDir = jetpack.cwd(app.getAppPath());
          * On clear button click
          * @return void
          */
-        var clearSettings = function() {
-            $reset.click(function(e) {
+        var clearSettings = function () {
+            $reset.click(function (e) {
                 e.preventDefault();
                 var reset = confirm("Are you sure you want clear your settings and reset the application?");
                 if (reset === true) {
@@ -424,29 +419,29 @@ var appDir = jetpack.cwd(app.getAppPath());
          * Hide model
          * @return void
          */
-        function hideModel() {
+        var hideModel = function () {
             $model.removeClass('model--is-failure')
                 .removeClass('model--is-success')
                 .removeClass('model--is-disconnected');
-        }
+        };
 
         /**
          * Show model
          * @param  string type Type of model to show (success/failure)
          * @return void
          */
-        function showModel(type) {
+        var showModel = function (type) {
             hideModel();
             switch (type) {
-                case 'success':
-                    $model.addClass('model--is-success').animateCss('fadeinout');
-                    break;
-                case 'failure':
-                    $model.addClass('model--is-failure').animateCss('fadeinout');
-                    break;
-                case 'disconnected':
-                    $model.addClass('model--is-disconnected');
-                    break;
+            case 'success':
+                $model.addClass('model--is-success').animateCss('fadeinout');
+                break;
+            case 'failure':
+                $model.addClass('model--is-failure').animateCss('fadeinout');
+                break;
+            case 'disconnected':
+                $model.addClass('model--is-disconnected');
+                break;
             }
         }
 
@@ -482,7 +477,7 @@ var appDir = jetpack.cwd(app.getAppPath());
         }
 
         return {
-            init: function() {
+            init: function () {
 
                 clearSettings();
                 checkForInput();
@@ -500,8 +495,8 @@ var appDir = jetpack.cwd(app.getAppPath());
         };
     }();
 
-    $(document).ready(function() {
+    $(document).ready(function () {
         App.init();
     });
 
-})($);
+})();
