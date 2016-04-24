@@ -25,11 +25,11 @@ var menubar = createMenubar({
  * @return void
  */
 menubar.on('after-create-window', function () {
-	//if (env.name !== 'production') {
-	menubar.window.openDevTools();
-	//} else {
-	//menubar.window.setResizable(false);
-	//}
+	if (env.name !== 'production') {
+		menubar.window.openDevTools();
+	} else {
+		menubar.window.setResizable(false);
+	}
 
 	// If heartbeat hasn't expired, show offline button?
 	menubar.window.webContents.send('OnCreateOrShowEvents');
