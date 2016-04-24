@@ -1,6 +1,6 @@
 # Are You Online?
 
-![Is kingsley online?](http://i.imgur.com/y6JwjAI.png "Is Kingsley Online?")
+![Is kingsley online?](http://i.imgur.com/1RjSV6p.png "Is Kingsley Online?")
 
 Do you work remotely? Are you in a different timezone? Do your colleagues know if you're online? Mine didn't, so I made this simple app to keep them updated.
 
@@ -11,10 +11,9 @@ To top it off, it's wrapped into a lovely OSX app so no awkawrd/complicated inst
 ## Installation
 ### OSX Application
   - Download the app for your OS from https://github.com/kingsloi/iskingsley.online/releases
-  - Move the unzipped `.app`/`.exe` file to your `/Applications` folder
-  - Run it
-  - It's windowless and menuless, and only appears in the tray. Look for the lightbulb
-  - Click Settings
+  - Unzip, run the `.dmg` installer
+  - Drag the app into your Applications folder
+  - It's windowless and menuless, and only appears in the tray. Look for the heartbeat/electrocardiogram
   - Set your URL endpoint and a interval to ping
 
 ### PHP Endpoint
@@ -32,9 +31,36 @@ _Using it? Share your site! Fork it, edit this readme, add your site/author, and
 - [http://isdavid.online](http://isdavid.online)
 
 ## Contributing
-   - Contributions are welcome!
-   - Pull down, edit, and submit a Pull Request
-   - [https://github.com/nwjs/nw.js](https://github.com/nwjs/nw.js) is used to pack the web app into OS apps. See src/build-command for how to build it
+   - Contributions are always welcome
+   - It's built with [Electron](http://electron.atom.io/)
+   - See below how to get up and running, edit & submit a pull request.
 
+### Getting Started
+```
+git clone https://github.com/szwacz/electron-boilerplate.git
+cd electron-boilerplate
+npm install
+npm start
+```
 ## License
-The code in this repo uses the MIT license, see our LICENSE file.
+The MIT License (MIT)
+
+Copyright (c) 2016 Kingsley Raspe
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
