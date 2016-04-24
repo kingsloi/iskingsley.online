@@ -1,12 +1,19 @@
 /*global navigator, localStorage: false, console: false, $: false */
 // Imports
+import os from 'os';
 import request from 'superagent';
-import remote from 'electron';
-import ipcRenderer from 'electron';
+import {
+    remote,
+    ipcRenderer
+} from 'electron';
+import jetpack from 'fs-jetpack';
+import env from './env';
 
 // Globals
 var app = remote.app;
 var ipc = ipcRenderer;
+var shell = remote.shell;
+var appDir = jetpack.cwd(app.getAppPath());
 
 // App
 (function ($) {
@@ -17,7 +24,6 @@ var ipc = ipcRenderer;
 
         var timeout;
         var flatline = false;
-
 
         var $save = $('#save');
         var $model = $(".model");
@@ -41,8 +47,6 @@ var ipc = ipcRenderer;
                 badRequest: "Flatline refused by the server. Incorrect password maybe?"
             }
         };
-
-
 
         /**
          * Set heartbeat datetime
@@ -164,6 +168,8 @@ var ipc = ipcRenderer;
             var expiry = ((getHeartbeatExpiry()) ? new Date(getHeartbeatExpiry()) : false);
 
             if (now > expiry || expiry === false || flatline === true) {
+                console.log(now);
+                console.log(expiry);
                 $enabled.prop('checked', false);
                 setSettings();
                 $go_offline.hide();
@@ -499,4 +505,4 @@ var ipc = ipcRenderer;
         App.init();
     });
 
-})();
+})($);
