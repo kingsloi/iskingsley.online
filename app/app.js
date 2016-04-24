@@ -166,9 +166,10 @@ var appDir = jetpack.cwd(app.getAppPath());
          */
         var toggleGoOfflineButton = function () {
             var now = new Date();
-            var expiry = ((getHeartbeatExpiry()) ? new Date(getHeartbeatExpiry()) : false);
+            var expiry = getHeartbeatExpiry();
+            expiry = ((expiry !== "false") ? new Date(getHeartbeatExpiry()) : false);
 
-            if (now > expiry || expiry === false || flatline === true) {
+            if (now > expiry || expiry == "false" || flatline === true) {
                 $enabled.prop('checked', false);
                 setSettings();
                 $go_offline.hide();
@@ -251,6 +252,7 @@ var appDir = jetpack.cwd(app.getAppPath());
                             showModel('success');
                             errors.flatline.count = 0;
                             setHeartbeatExpiry(false);
+                            updateHeartbeat(body.expires_on);
                             toggleGoOfflineButton('hide');
                             return true;
                         }
@@ -334,16 +336,20 @@ var appDir = jetpack.cwd(app.getAppPath());
          * Update last ping timestamp
          * @return void
          */
-        function updateHeartbeat(expires_on, override = false) {
+        function updateHeartbeat(expires_on) {
 
-            var heartbeat_on = getDateTime();
+            var now = getDateTime();
 
-            $heartbeat.html(heartbeat_on);
-            $heartbeat.prop('title', 'Expires: ' + expires_on);
-            $heartbeat.animateCss('beat');
+            if (!expires_on) {
+                $heartbeat.html('-');
+                $heartbeat.prop('title', null);
+            } else {
+                $heartbeat.html(now);
+                $heartbeat.prop('title', 'Expires: ' + expires_on);
+                setHeartbeatDateTime(now);
+                setHeartbeatExpiry(expires_on);
+            }
 
-            setHeartbeatDateTime(heartbeat_on);
-            setHeartbeatExpiry(expires_on);
             toggleGoOfflineButton();
         }
 
@@ -376,10 +382,17 @@ var appDir = jetpack.cwd(app.getAppPath());
          * @return void
          */
         var registerButtonClicks = function () {
-            $('#close-model').click(function () {
+            $('#ping-now').click(function (e) {
+                e.preventDefault();
+                sendHeartBeat();
+                toggleGoOfflineButton();
+            });
+            $('#close-model').click(function (e) {
+                e.preventDefault();
                 hideModel();
             });
-            $('#exit-application a').click(function () {
+            $('#exit-application a').click(function (e) {
+                e.preventDefault();
                 var exit = confirm("Are you sure you want to exit?");
                 if (exit === true) {
                     app.quit();

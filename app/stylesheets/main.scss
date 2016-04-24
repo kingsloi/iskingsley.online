@@ -144,6 +144,13 @@ body {
     display: none;
 }
 
+#ping-now {
+    display: inline-block;
+    padding: 2px 3px;
+    color: $brand-info;
+    font-style: 0.85em;
+}
+
 .exit-application {
     position: absolute;
     top: 5px;
@@ -166,10 +173,6 @@ body {
             cursor: pointer;
         }
     }
-}
-
-.alert {
-    padding: 10px;
 }
 
 .fadeinout {
