@@ -24,12 +24,12 @@ var menubar = createMenubar({
  * After creating the menubar window
  * @return void
  */
-menubar.on('after-create-window', function() {
-	if (env.name !== 'production') {
-		menubar.window.openDevTools();
-	} else {
-		menubar.window.setResizable(false);
-	}
+menubar.on('after-create-window', function () {
+	//if (env.name !== 'production') {
+	menubar.window.openDevTools();
+	//} else {
+	//menubar.window.setResizable(false);
+	//}
 
 	// If heartbeat hasn't expired, show offline button?
 	menubar.window.webContents.send('OnCreateOrShowEvents');
@@ -39,7 +39,7 @@ menubar.on('after-create-window', function() {
  * After window has been shown
  * @return void
  */
-menubar.on('after-show', function() {
+menubar.on('after-show', function () {
 	// If heartbeat hasn't expired, show offline button?
 	menubar.window.webContents.send('OnCreateOrShowEvents');
 });

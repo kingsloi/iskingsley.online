@@ -1,5 +1,6 @@
 /*global navigator, localStorage: false, console: false, $: false */
 // Imports
+
 import os from 'os';
 import request from 'superagent';
 import {
@@ -168,8 +169,6 @@ var appDir = jetpack.cwd(app.getAppPath());
             var expiry = ((getHeartbeatExpiry()) ? new Date(getHeartbeatExpiry()) : false);
 
             if (now > expiry || expiry === false || flatline === true) {
-                console.log(now);
-                console.log(expiry);
                 $enabled.prop('checked', false);
                 setSettings();
                 $go_offline.hide();
@@ -204,6 +203,9 @@ var appDir = jetpack.cwd(app.getAppPath());
 
             request
                 .get(localStorage.getItem('is_online--url'))
+                .query({
+                    interval: localStorage.getItem('is_online--interval')
+                })
                 .end(function (error, response) {
                     if (response.type === "application/json" && !error) {
                         var body = tryParseJSON(response.text);
@@ -239,7 +241,8 @@ var appDir = jetpack.cwd(app.getAppPath());
                 .get(localStorage.getItem('is_online--url'))
                 .query({
                     offline: '1'
-                }).end(function (error, response) {
+                })
+                .end(function (error, response) {
 
                     if (response.type === "application/json" && !error) {
                         var body = tryParseJSON(response.text);
@@ -294,6 +297,7 @@ var appDir = jetpack.cwd(app.getAppPath());
                     setSettings();
                     toggleSaveButton('hide');
                     if ($enabled.is(":checked")) {
+                        sendHeartBeat();
                         performCPR();
                     }
                     return true;
@@ -333,7 +337,6 @@ var appDir = jetpack.cwd(app.getAppPath());
         function updateHeartbeat(expires_on, override = false) {
 
             var heartbeat_on = getDateTime();
-            var heartbeat_expiry = expires_on;
 
             $heartbeat.html(heartbeat_on);
             $heartbeat.prop('title', 'Expires: ' + expires_on);

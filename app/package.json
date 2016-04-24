@@ -11,7 +11,7 @@
     "electron",
     "php"
   ],
-  "version": "3.1.0",
+  "version": "3.1.1",
   "author": "Kingsley Raspe",
   "copyright": "© Kingsley Raspe",
   "main": "background.js",
