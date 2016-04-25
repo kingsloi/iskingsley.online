@@ -31,7 +31,6 @@
         exit();
     }
 
-    print_r($_GET);
     // Fetch timestamp
     $last_updated = file_get_contents('../private/last_updated.txt');
 
