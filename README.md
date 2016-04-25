@@ -36,8 +36,8 @@ _Using it? Share your site! Fork it, edit this readme, add your site/author, and
    - See below how to get up and running, edit & submit a pull request.
 
 ### Getting Started
-```
-git clone https://github.com/szwacz/electron-boilerplate.git
+```bash
+git clone https://github.com/kingsloi/iskingsley.online.git
 cd electron-boilerplate
 npm install
 npm start
