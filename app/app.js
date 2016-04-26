@@ -1,18 +1,22 @@
 'use strict';
 
+// Core
 import os from 'os';
-import request from 'superagent';
 import { remote, ipcRenderer } from 'electron';
 import jetpack from 'fs-jetpack';
 import env from './env';
 
+// Plugins
+import request from 'superagent';
 import validator from 'validator';
 import animateCss from 'animate.css-js';
 import stopwatch from 'timer-stopwatch';
 import moment from 'moment';
 
+// Helpers
 import './helpers/context_menu';
 
+// Global variables
 let app = remote.app;
 let ipc = ipcRenderer;
 let shell = remote.shell;
@@ -26,10 +30,15 @@ shortcut.register('ctrl+alt+s', function () {
 */
 
 let cprTimer;
+
+const DATETIME_FORMAT = 'DD/MM/YY hh:mm A';
 const messages = {
     errors: {
         general: "Ooops! There was a problem with the URL you've supplied. Please check it and try again",
         badRequest: "Heartbeat refused by the server. Incorrect password maybe?"
+    },
+    confirm: {
+        reset: "Are you sure you want to reset the application?"
     }
 }
 
@@ -37,8 +46,9 @@ class App {
 
     constructor() {
 
+        this.flatline = false;
         this.heartbeatErrorCount = 0;
-        this.flatlineErrorCount; // = 0;
+        this.flatlineErrorCount = 0;
 
         // Shortcut to DOM elements
         this.appContainer = document.getElementById('app');
@@ -52,17 +62,47 @@ class App {
         this.model = document.getElementById('model');
         this.lastHeartbeat = document.getElementById('last-heartbeat');
 
-
         // Event Listeners
         this.settingsForm.addEventListener('submit', (e) => this.submitForm(e));
         this.saveButton.addEventListener('click', () => this.saveSettings());
         this.offlineButton.addEventListener('click', () => this.goOffline());
-        this.resetButton.addEventListener('click', () => this.resetSettings());
+        this.resetButton.addEventListener('click', () => App.resetSettings());
         this.intervalInput.addEventListener('keydown', (e) => this.validateInterval(e));
 
         // Load previously saved settings
         for (let key in localStorage) {
             this.getSettings(key, localStorage[key]);
+        }
+
+        // Toggle ofline button / register main.js events
+        this.toggleGoOfflineButton();
+        this.registerIpcEvents();
+    }
+
+    /**
+     * registerIpcEvents() Register render process events
+     * called from main js
+     *
+     * @todo improve maybe but not sure how :(
+     * @return void
+     */
+    registerIpcEvents() {
+        ipc.on('OnCreateOrShowEvents', () => {
+            this.toggleGoOfflineButton();
+        });
+    }
+
+    /**
+     * resetSettings() reset settings/application
+     * from scratch
+     *
+     * @return void
+     */
+    static resetSettings() {
+        let sure = confirm(messages.confirm.reset);
+        if (sure) {
+            localStorage.clear();
+            location.reload();
         }
     }
 
@@ -87,6 +127,69 @@ class App {
      */
     static getSetting(key) {
         return localStorage.getItem(key);
+    }
+
+    /**
+     * get flatline() fetch heartbeat
+     * ajax errors
+     *
+     * @return {Number} number of heartbeat errors
+     */
+    get flatline() {
+        return this._flatline;
+    }
+
+    /**
+     * set flatline() set flatline
+     * ajax error count
+     *
+     * @param  {Number} val flatline error count
+     * @return void
+     */
+    set flatline(val) {
+        this._flatline = val;
+    }
+
+    /**
+     * get heartbeatErrorCount() fetch heartbeat
+     * ajax errors
+     *
+     * @return {Number} number of heartbeat errors
+     */
+    get heartbeatErrorCount() {
+        return this._heartbeatErrorCount;
+    }
+
+    /**
+     * set flatlineErrorCount() set flatline
+     * ajax error count
+     *
+     * @param  {Number} val flatline error count
+     * @return void
+     */
+    set flatlineErrorCount(val) {
+        this._flatlineErrorCount = val;
+    }
+
+    /**
+     * get flatlineErrorCount() fetch flatline
+     * ajax errors
+     *
+     * @return {Number} number of flatline errors
+     */
+    get flatlineErrorCount() {
+        return this._flatlineErrorCount;
+    }
+
+    /**
+     * set heartbeatErrorCount() set heartbeat
+     * ajax error count
+     *
+     * @param  {Number} val heartbeat error count
+     * @return void
+     */
+    set heartbeatErrorCount(val) {
+        this._heartbeatErrorCount = val;
     }
 
     /**
@@ -121,10 +224,15 @@ class App {
         App.setSetting('send-heartbeat', heartbeat.checked);
         this.showModel('success');
 
-        // If heartbeat isn't enabled, staph
-        if (heartbeat.checked === false) return false;
+        if (typeof cprTimer == "object") cprTimer.stop();
 
-        this.performCPR();
+        // If heartbeat isn't enabled, staph
+        if (heartbeat.checked === false) {
+            return false;
+        }
+
+        this.sendHeartbeat();
+        this.toggleGoOfflineButton();
     }
 
     /**
@@ -134,7 +242,6 @@ class App {
      * @return void
      */
     performCPR() {
-
         cprTimer = new stopwatch(1000);
         cprTimer.start();
         cprTimer.onDone(() => {
@@ -158,26 +265,16 @@ class App {
             .query({
                 interval: interval
             }).end((error, response) => {
-                // If no errors & json returned from the server
                 if (response.type === "application/json" && !error) {
-
-                    // Parse response from server
                     let body = App.tryParseJSON(response.text);
-
-                    // If succcessful
                     if (response.status === 200 && body.success === true) {
-
-                        // Reset errors, update heartbeat
                         this.heartbeatErrorCount = 0;
                         this.updateLastHeartbeat(body.expires_on);
-
-                        // Perform another heartbeat
+                        this.toggleGoOfflineButton();
                         if (isCPREnabled == "true") {
-                            cprTimer.stop();
+                            if (typeof cprTimer == "object") cprTimer.stop();
                             this.performCPR();
                         }
-
-                        // If successful, no need to go any further
                         return true;
                     } else {
                         badRequest = true;
@@ -189,20 +286,58 @@ class App {
                     alert((!badRequest) ? messages.errors.badRequest : messages.errors.general);
                     this.stopCPR();
                 }
+                return false;
             })
     }
 
-    get heartbeatErrorCount() {
-        return this._heartbeatErrorCount;
+    /**
+     * sendHeartbeat() Ping the server
+     * with the go offline signal
+     *
+     * @return {Boolean} whether success or not
+     */
+    sendFlatline() {
+
+        let badRequest = false,
+            url = App.getSetting('url');
+
+        request.get(url)
+            .query({
+                offline: '1'
+            }).end((error, response) => {
+                if (response.type === "application/json" && !error) {
+                    let body = App.tryParseJSON(response.text);
+                    if (response.status === 200 && body.success === true) {
+                        this.heartbeatErrorCount = 0;
+                        this.flatline = true;
+                        this.updateLastHeartbeat(body.expires_on);
+                        this.toggleGoOfflineButton();
+                        this.stopCPR();
+                        return true;
+                    } else {
+                        badRequest = true;
+                    }
+                }
+
+                this.flatlineErrorCount++;
+                if (this.flatlineErrorCount > 2) {
+                    alert((!badRequest) ? messages.errors.badRequest : messages.errors.general);
+                    this.stopCPR();
+                }
+                return false;
+            })
     }
 
-    set heartbeatErrorCount(val) {
-        this._heartbeatErrorCount = val;
-    }
-
+    /**
+     * stopCPR() Stop automatic pings/CPR
+     * to server
+     *
+     * @return void
+     */
     stopCPR() {
         this.heartbeatCheckbox.checked = false;
-        cprTimer.stop();
+        App.setSetting('send-heartbeat', "false");
+        if (typeof cprTimer == "object") cprTimer.stop();
     }
 
     /**
@@ -213,24 +348,16 @@ class App {
      */
     updateLastHeartbeat(expires_on) {
 
-        let nowHR = moment().format("DD/MM/YY hh:mm A"),
-            expiresHR = moment(expires_on).format('DD/MM/YY hh:mm A');
+        expires_on = ((expires_on) ? expires_on : moment().subtract(1, 'minute'));
+
+        let nowHR = moment().format(DATETIME_FORMAT),
+            expiresHR = moment(expires_on).format(DATETIME_FORMAT);
 
         this.lastHeartbeat.innerHTML = nowHR;
         this.lastHeartbeat.title = 'Expires on: ' + expiresHR;
+
         App.setSetting('last-heartbeat', nowHR);
         App.setSetting('last-heartbeat-expiry', expiresHR);
-    }
-
-    /**
-     * resetSettings() reset settings/application
-     * from scratch
-     *
-     * @return void
-     */
-    resetSettings() {
-        localStorage.clear();
-        location.reload();
     }
 
     /**
@@ -310,18 +437,6 @@ class App {
     }
 
     /**
-     * hideModel() Hide the model
-     * and remove the success/error classes
-     *
-     * @return void
-     */
-    hideModel() {
-        this.model.classList.remove('model--is-failure');
-        this.model.classList.remove('model--is-success');
-        this.model.classList.remove('model--is-disconnected');
-    }
-
-    /**
      * showModel() Show model
      *
      * @param  {String} type type of model to show
@@ -345,21 +460,45 @@ class App {
     }
 
     /**
-     * tryParseJSON() Try parse json
+     * hideModel() Hide the model
+     * and remove the success/error classes
      *
-     * @param  {String} json        json string to validate
-     * @return {String} | {Boolean}
+     * @return void
      */
-    static tryParseJSON(json) {
-        try {
-            let o = JSON.parse(json);
-            if (o && typeof o === "object" && o !== null) {
-                return o;
-            }
-        } catch (e) {
-            console.log(e);
+    hideModel() {
+        this.model.classList.remove('model--is-failure');
+        this.model.classList.remove('model--is-success');
+        this.model.classList.remove('model--is-disconnected');
+    }
+
+    /**
+     * toggleGoOfflineButton() If ping is currently valid
+     * allow user to go offline
+     *
+     * @return {Boolean} Whether is visible or not
+     */
+    toggleGoOfflineButton() {
+        let now = moment();
+        let expiry = moment(App.getSetting('last-heartbeat-expiry'), DATETIME_FORMAT);
+
+        if (!expiry.isValid() || !expiry.isAfter(now) || this.flatline) {
+            this.flatline = false;
+            this.offlineButton.style.display = "none";
+            return false;
         }
-        return false;
+        this.offlineButton.style.display = "inline-block";
+        return true;
+    }
+
+    /**
+     * goOffline() on button click
+     * send flatline signal
+     *
+     * @return void
+     */
+    goOffline() {
+        this.showModel('success');
+        this.sendFlatline();
     }
 
     /**
@@ -378,6 +517,24 @@ class App {
                 }
             ]
         });
+    }
+
+    /**
+     * tryParseJSON() Try parse json
+     *
+     * @param  {String} json        json string to validate
+     * @return {String} | {Boolean}
+     */
+    static tryParseJSON(json) {
+        try {
+            let o = JSON.parse(json);
+            if (o && typeof o === "object" && o !== null) {
+                return o;
+            }
+        } catch (e) {
+            console.log(e);
+        }
+        return false;
     }
 };
 
