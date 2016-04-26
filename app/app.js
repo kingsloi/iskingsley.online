@@ -69,6 +69,11 @@ class App {
         this.resetButton.addEventListener('click', () => App.resetSettings());
         this.intervalInput.addEventListener('keydown', (e) => this.validateInterval(e));
 
+        this.urlInput.addEventListener('input', () => this.toggleSaveButton());
+        this.intervalInput.addEventListener('input', () => this.toggleSaveButton());
+        this.heartbeatCheckbox.addEventListener('change', () => this.toggleSaveButton());
+
+
         // Load previously saved settings
         for (let key in localStorage) {
             this.getSettings(key, localStorage[key]);
@@ -89,6 +94,7 @@ class App {
     registerIpcEvents() {
         ipc.on('OnCreateOrShowEvents', () => {
             this.toggleGoOfflineButton();
+
         });
     }
 
@@ -231,6 +237,7 @@ class App {
             return false;
         }
 
+        this.toggleSaveButton('hide');
         this.sendHeartbeat();
         this.toggleGoOfflineButton();
     }
@@ -469,6 +476,26 @@ class App {
         this.model.classList.remove('model--is-failure');
         this.model.classList.remove('model--is-success');
         this.model.classList.remove('model--is-disconnected');
+    }
+
+    static isElementVisible(el) {
+        let style = window.getComputedStyle(el);
+        return style.width !== "" &&
+            style.height !== "" &&
+            style.opacity !== "" &&
+            style.display !== 'none' &&
+            style.visibility !== 'hidden';
+    }
+
+    toggleSaveButton(type = 'show') {
+        let isVisible = App.isElementVisible(this.saveButton);
+        if (isVisible && type == 'show') {
+            return false;
+        } else if (type == 'hide') {
+            this.saveButton.style.display = "none";
+        } else {
+            this.saveButton.style.display = "inline-block";
+        }
     }
 
     /**
