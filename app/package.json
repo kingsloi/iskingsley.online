@@ -25,7 +25,8 @@
     "jquery": "^2.2.3",
     "menubar": "github:maxogden/menubar#pull/117/head",
     "shell": "^0.3.2",
-    "superagent": "^1.8.3"
+    "superagent": "^1.8.3",
+    "validator": "^5.2.0"
   },
   "packageNameTemplate": "{{name}}-v{{version}}-{{platform}}-{{arch}}",
   "osx": {

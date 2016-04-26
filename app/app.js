@@ -1,524 +1,154 @@
-/*global navigator, localStorage: false, console: false, $: false */
-// Imports
+'use strict';
 
 import os from 'os';
 import request from 'superagent';
-import {
-    remote,
-    ipcRenderer
-} from 'electron';
+import { remote, ipcRenderer } from 'electron';
 import jetpack from 'fs-jetpack';
 import env from './env';
+import validator from 'validator';
 
-// Globals
-var app = remote.app;
-var ipc = ipcRenderer;
-var shell = remote.shell;
-var appDir = jetpack.cwd(app.getAppPath());
+let app = remote.app;
+let ipc = ipcRenderer;
+let shell = remote.shell;
+let appDir = jetpack.cwd(app.getAppPath());
 
-// App
-(function ($) {
+class App {
 
-    'use strict';
+    constructor() {
 
-    var App = function () {
+        // Shortcut to DOM elements
+        this.appContainer = document.getElementById('app');
+        this.settingsForm = document.getElementById('settings');
+        this.urlInput = document.getElementById('url');
+        this.intervalInput = document.getElementById('interval');
+        this.heartbeatCheckbox = document.getElementById('send-heartbeat');
+        this.saveButton = document.getElementById('save');
+        this.offlineButton = document.getElementById('go-offline');
 
-        var timeout;
-        var flatline = false;
+        // Disable form submit
+        this.settingsForm.addEventListener('submit', (e) => this.submitForm(e));
 
-        var $save = $('#save');
-        var $model = $(".model");
-        var $url = $("#url__value");
-        var $reset = $("#reset-settings");
-        var $go_offline = $('#go-offline');
-        var $actions = $('.actions button');
-        var $enabled = $("#enabled__value");
-        var $interval = $("#interval__value");
-        var $heartbeat = $(".heartbeat__value");
+        // Save settings on button click
+        this.saveButton.addEventListener('click', () => this.saveSettings());
 
-        var errors = {
-            heartbeat: {
-                count: 0,
-                message: "Ooops! There was a problem with the URL you've supplied. Please check it and try again!",
-                badRequest: "Heartbeat refused by the server. Incorrect password maybe?"
-            },
-            flatline: {
-                count: 0,
-                message: "Ooops! There was a problem with sending the offline command. Please check the URL (" + localStorage.getItem('is_online--url') + "&offline=1) and try again.",
-                badRequest: "Flatline refused by the server. Incorrect password maybe?"
-            }
-        };
+        // Go offline on button click
+        this.offlineButton.addEventListener('click', () => this.goOffline());
 
-        /**
-         * Set heartbeat datetime
-         * @param heartbeat_datetime date/time of last ping
-         */
-        var setHeartbeatDateTime = function (heartbeat_datetime) {
-            localStorage.setItem('is_online--heartbeat', heartbeat_datetime);
-        };
+        // Validate interval input
+        this.intervalInput.addEventListener('keydown', (e) => this.validateInterval(e));
 
-        /**
-         * Get last heartbeat
-         * @return string | false
-         */
-        var getHeartbeatDateTime = function () {
-            if (localStorage.getItem('is_online--heartbeat')) {
-                return localStorage.getItem('is_online--heartbeat');
-            }
-            return false;
-        };
-
-        /**
-         * Set heartbeat expiry
-         * @param heartbeat expiry datetime from the server
-         */
-        var setHeartbeatExpiry = function (heartbeat_expiry) {
-            localStorage.setItem('is_online--heartbeat-expires-on', heartbeat_expiry);
-        };
-
-        /**
-         * Get heartbeat expiry
-         * @return string | false
-         */
-        var getHeartbeatExpiry = function () {
-            if (localStorage.getItem('is_online--heartbeat-expires-on')) {
-                return localStorage.getItem('is_online--heartbeat-expires-on');
-            }
-            return false;
-        };
-
-        /**
-         * Get last heartbeat
-         * @return void
-         */
-        var getLastHeartbeat = function () {
-            if (getHeartbeatDateTime()) {
-                $heartbeat.html(getHeartbeatDateTime());
-                $heartbeat.prop('title', 'Expires: ' + getHeartbeatExpiry());
-            }
-        };
-
-        /**
-         * Clear settings from localstorage
-         * @return void
-         */
-        var removeSettings = function () {
-            localStorage.removeItem('is_online--url');
-            localStorage.removeItem('is_online--interval');
-            localStorage.removeItem('is_online--enabled');
-        };
-
-        /**
-         * Set settings to localstorage
-         * @return void
-         */
-        var setSettings = function () {
-            localStorage.setItem('is_online--url', $.trim($url.val()));
-            localStorage.setItem('is_online--interval', $.trim($interval.val()));
-            localStorage.setItem('is_online--enabled', $enabled.is(":checked"));
-        };
-
-        /**
-         * Get settings from localstorage
-         * @return void
-         */
-        var getSettings = function () {
-            if (localStorage.getItem('is_online--url')) {
-                $url.val(localStorage.getItem('is_online--url'));
-            }
-            if (localStorage.getItem('is_online--interval')) {
-                $interval.val(localStorage.getItem('is_online--interval'));
-            }
-            if (localStorage.getItem('is_online--enabled')) {
-                if (localStorage.getItem('is_online--enabled') === true) {
-                    $enabled.prop('checked', true);
-                }
-            }
-        };
-
-        /**
-         * Is user connected to wifi/lan?
-         * @return boolean
-         */
-        function isUserConnectedToInternet() {
-            return ((navigator.onLine) ? true : false);
+        // Load previously saved settings
+        for (let key in localStorage) {
+            this.getSettings(key, localStorage[key]);
         }
 
-        /**
-         * Toggle disconnected model
-         * @return boolean Whether online or offline
-         */
-        var toggleDisconnectedModel = function () {
-            var online = isUserConnectedToInternet();
-            if (!online) {
-                showModel('disconnected');
-                $actions.attr("disabled", true);
-                return false;
-            }
-            hideModel();
-            $actions.attr("disabled", false);
-            return true;
-        };
+        // Listen for updates to settings from other windows
+        window.addEventListener('storage', e => this.displayNote(e.key, e.newValue));
+        //element.addEventListener("webkitAnimationEnd", showMessage, false);
+        //element.addEventListener("oAnimationEnd"     , showMessage, false);
+        //element.addEventListener("msAnimationEnd"    , showMessage, false);
+        //element.addEventListener("animationend"      , showMessage, false);
+    }
 
-        /**
-         * Show/hide go offline button if heartbeat has/hasn't expired
-         * @return boolean Whether heartbeat has expired
-         */
-        var toggleGoOfflineButton = function () {
-            var now = new Date();
-            var expiry = getHeartbeatExpiry();
-            expiry = ((expiry !== "false") ? new Date(getHeartbeatExpiry()) : false);
+    /**
+     * submitForm() On form submit
+     * prevent submit/refresh
+     *
+     * @param  {Event} e Form submit event
+     * @return void
+     */
+    submitForm(e) {
+        e.preventDefault();
+    }
 
-            if (now > expiry || expiry == "false" || flatline === true) {
-                $enabled.prop('checked', false);
-                setSettings();
-                $go_offline.hide();
-                return true;
-            }
+    /**
+     * saveSettings() Save/persist
+     * the form settings
+     *
+     * @return void
+     */
+    saveSettings() {
+        if (this.validateInput()) {
 
-            $go_offline.show();
-            return false;
-        };
+            this.setSetting('url', this.urlInput.value);
+            this.setSetting('interval', this.intervalInput.value);
+            this.setSetting('send-heartbeat', this.heartbeatCheckbox.checked);
+        }
+    }
 
-        /**
-         * Tasks executed by main process
-         * @return void
-         */
-        var registerIpcEvents = function () {
-            ipc.on('OnCreateOrShowEvents', function () {
-                getLastHeartbeat();
-                toggleGoOfflineButton();
-                toggleDisconnectedModel();
-            });
-        };
-
-        /**
-         * Send heartbeat to specified URL
-         * @return boolean
-         */
-        var sendHeartBeat = function () {
-            if (!isUserConnectedToInternet()) {
-                return false;
-            }
-            var badRequest = false;
-
-            request
-                .get(localStorage.getItem('is_online--url'))
-                .query({
-                    interval: localStorage.getItem('is_online--interval')
-                })
-                .end(function (error, response) {
-                    if (response.type === "application/json" && !error) {
-                        var body = tryParseJSON(response.text);
-                        if (response.status === 200 && body.success === true) {
-                            errors.heartbeat.count = 0;
-                            updateHeartbeat(body.expires_on);
-                            return true;
-                        }
-                        badRequest = true;
-                    }
-
-                    errors.heartbeat.count++;
-                    if (errors.heartbeat.count > 2) {
-                        alert((!badRequest) ? errors.heartbeat.message : errors.heartbeat.badRequest);
-                        $enabled.prop('checked', false);
-                        clearTimeout(timeout);
-                    }
-                    return false;
-                });
-        };
-
-        /**
-         * Send offline signal to server
-         * @return boolean
-         */
-        var sendFlatline = function () {
-            if (!isUserConnectedToInternet()) {
-                return false;
-            }
-            var badRequest = false;
-
-            request
-                .get(localStorage.getItem('is_online--url'))
-                .query({
-                    offline: '1'
-                })
-                .end(function (error, response) {
-
-                    if (response.type === "application/json" && !error) {
-                        var body = tryParseJSON(response.text);
-                        if (response.status === 200 && body.success === true) {
-                            flatline = true;
-                            showModel('success');
-                            errors.flatline.count = 0;
-                            setHeartbeatExpiry(false);
-                            updateHeartbeat(body.expires_on);
-                            toggleGoOfflineButton('hide');
-                            return true;
-                        }
-                        badRequest = true;
-                    }
-
-                    errors.flatline.count++;
-                    if (errors.flatline.count > 2) {
-                        alert((!badRequest) ? errors.flatline.message : errors.flatline.badRequest);
-                        $enabled.prop('checked', false);
-                    }
-                    return false;
-                });
-        };
-
-        /**
-         * On Form save
-         * @return boolean
-         */
-        var saveSettings = function () {
-            $('#settings').submit(function (e) {
+    /**
+     * validateInterval() Don't allow
+     * non-numberic characters from input
+     *
+     * @param  {Event} e Keydown event
+     * @return void
+     */
+    validateInterval(e) {
+        let unicode = e.charCode ? e.charCode : e.keyCode;
+        if (unicode != 8) {
+            if (unicode < 48 || unicode > 57)
                 e.preventDefault();
+        }
+    }
 
-                var error = false;
-                flatline = false;
-                clearTimeout(timeout);
+    /**
+     * validateInput() Validate input fields
+     * for save
+     *
+     * @return {Boolean} whether or not input was valid
+     */
+    validateInput() {
+        // Remove any existing errors
+        this.urlInput.parentElement.classList.remove("has-error");
+        this.intervalInput.parentElement.classList.remove("has-error");
 
-                $url.parent().removeClass('has-error');
-                $interval.parent().parent().removeClass('has-error');
+        // Validate input
+        let urlOpts = { require_protocol: true },
+            url = !validator.isNull(this.urlInput.value) && validator.isURL(this.urlInput.value, urlOpts),
+            interval = validator.isNumeric(this.intervalInput.value);
 
-                if ($enabled.is(":checked")) {
-                    if ($.trim($url.val()) == "") {
-                        $url.parent().addClass('has-error');
-                        error = true;
-                    }
-                    if ($.trim($interval.val()) == "") {
-                        $interval.parent().parent().addClass('has-error');
-                        error = true;
-                    }
-                }
+        // If not valid, add error classes
+        if (!url) this.urlInput.parentElement.classList.add("has-error");
+        if (!interval) this.intervalInput.parentElement.classList.add("has-error");
 
-                if (!error) {
-                    showModel('success');
-                    setSettings();
-                    toggleSaveButton('hide');
-                    if ($enabled.is(":checked")) {
-                        sendHeartBeat();
-                        performCPR();
-                    }
-                    return true;
-                }
-                showModel('failure');
-                return false;
-            });
-        };
+        return url && interval;
+    }
 
-        /**
-         * On go offline button click
-         * @return void
-         */
-        var goOffline = function () {
-            $go_offline.click(function (e) {
-                e.preventDefault();
-                sendFlatline();
-            });
-        };
+    /**
+     * setSetting() Set setting stored
+     * in local storage
+     *
+     * @param  {String} key   element ID
+     * @param  {String} value stored value
+     * @return void
+     */
+    setSetting(key, value) {
+        localStorage.setItem(key, value);
+    }
 
-        /**
-         * Send timed heartbeats
-         * @return void
-         */
-        var performCPR = function () {
-            if ($enabled.is(":checked")) {
-                sendHeartBeat();
-                clearTimeout(timeout);
-                timeout = setTimeout(performCPR, localStorage.getItem('is_online--interval') * 60000);
-            }
-        };
-
-        /**
-         * Update last ping timestamp
-         * @return void
-         */
-        function updateHeartbeat(expires_on) {
-
-            var now = getDateTime();
-
-            if (!expires_on) {
-                $heartbeat.html('-');
-                $heartbeat.prop('title', null);
+    /**
+     * getSettings() Apply setting stored
+     * in local storage
+     *
+     * @param  {String} key   element ID
+     * @param  {String} value stored value
+     * @return void
+     */
+    getSettings(key, value) {
+        let element = document.getElementById(key);
+        if (element) {
+            if (element.type === "checkbox") {
+                element.checked = (value == 'true');
             } else {
-                $heartbeat.html(now);
-                $heartbeat.prop('title', 'Expires: ' + expires_on);
-                setHeartbeatDateTime(now);
-                setHeartbeatExpiry(expires_on);
-            }
-
-            toggleGoOfflineButton();
-        }
-
-        /**
-         * Check for user input on any of the inputs, showing settings button
-         * if text/checkbox gets touched by the user
-         * @return void
-         */
-        var checkForInput = function () {
-            $(':text').keypress(function (e) {
-                toggleSaveButton();
-            });
-            $(':text').keyup(function (e) {
-                if (e.toggleSaveButton == 8 || e.keyCode == 46) {
-                    enableSaveBtn();
-                } else {
-                    e.preventDefault();
-                }
-            });
-            $(':text').bind('paste', function (e) {
-                toggleSaveButton();
-            });
-            $(':checkbox').change(function (e) {
-                toggleSaveButton();
-            });
-        };
-
-        /**
-         * Exit application
-         * @return void
-         */
-        var registerButtonClicks = function () {
-            $('#ping-now').click(function (e) {
-                e.preventDefault();
-                sendHeartBeat();
-                toggleGoOfflineButton();
-            });
-            $('#close-model').click(function (e) {
-                e.preventDefault();
-                hideModel();
-            });
-            $('#exit-application a').click(function (e) {
-                e.preventDefault();
-                var exit = confirm("Are you sure you want to exit?");
-                if (exit === true) {
-                    app.quit();
-                }
-            });
-        };
-
-        /**
-         * On clear button click
-         * @return void
-         */
-        var clearSettings = function () {
-            $reset.click(function (e) {
-                e.preventDefault();
-                var reset = confirm("Are you sure you want clear your settings and reset the application?");
-                if (reset === true) {
-                    removeSettings();
-                    location.reload();
-                }
-            });
-        };
-
-        /**
-         * Try parse json
-         * @param  string json json string to validate
-         * @return string | boolean
-         */
-        function tryParseJSON(json) {
-            try {
-                var o = JSON.parse(json);
-
-                // Handle non-exception-throwing cases:
-                // Neither JSON.parse(false) or JSON.parse(1234) throw errors, hence the type-checking,
-                // but... JSON.parse(null) returns 'null', and typeof null === "object",
-                // so we must check for that, too.
-                if (o && typeof o === "object" && o !== null) {
-                    return o;
-                }
-            } catch (e) {
-                console.log(e);
-            }
-            return false;
-        }
-
-        /**
-         * Hide model
-         * @return void
-         */
-        var hideModel = function () {
-            $model.removeClass('model--is-failure')
-                .removeClass('model--is-success')
-                .removeClass('model--is-disconnected');
-        };
-
-        /**
-         * Show model
-         * @param  string type Type of model to show (success/failure)
-         * @return void
-         */
-        var showModel = function (type) {
-            hideModel();
-            switch (type) {
-            case 'success':
-                $model.addClass('model--is-success').animateCss('fadeinout');
-                break;
-            case 'failure':
-                $model.addClass('model--is-failure').animateCss('fadeinout');
-                break;
-            case 'disconnected':
-                $model.addClass('model--is-disconnected');
-                break;
+                element.value = value;
             }
         }
+    }
 
-        /**
-         * Toggle save button
-         * @return boolean | void
-         */
-        function toggleSaveButton(type = 'show') {
-            if (type == 'show' && $save.is(":visible")) {
-                return false;
-            }
-            $save.toggle();
-        }
+    init() {
+        console.log('this.settings');
+    }
+};
 
-        /**
-         * Get date time
-         * @return string
-         */
-        function getDateTime() {
-            var now = new Date();
-            return [
-                [AddZero(now.getDate()), AddZero(now.getMonth() + 1), now.getFullYear()].join("/"), [AddZero(now.getHours()), AddZero(now.getMinutes())].join(":"), now.getHours() >= 12 ? "PM" : "AM"
-            ].join(" ");
-        }
-
-        /**
-         * Add a 0 for single-digit date/time values
-         * @param int
-         * @return string
-         */
-        function AddZero(num) {
-            return (num >= 0 && num < 10) ? "0" + num : num + "";
-        }
-
-        return {
-            init: function () {
-
-                clearSettings();
-                checkForInput();
-                getSettings();
-                saveSettings();
-                goOffline();
-                registerButtonClicks();
-                registerIpcEvents();
-                toggleGoOfflineButton();
-                if ($enabled.is(":checked")) {
-                    sendHeartBeat();
-                    performCPR();
-                }
-            }
-        };
-    }();
-
-    $(document).ready(function () {
-        App.init();
-    });
-
-})($);
+// On load start the app
+window.addEventListener('load', () => new App());
