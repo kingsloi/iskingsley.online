@@ -37,10 +37,8 @@ class App {
 
     constructor() {
 
-        let errors = {
-            heartbeat: 0,
-            flatline: 0
-        }
+        this.heartbeatErrorCount = 0;
+        this.flatlineErrorCount; // = 0;
 
         // Shortcut to DOM elements
         this.appContainer = document.getElementById('app');
@@ -151,36 +149,77 @@ class App {
      */
     sendHeartbeat() {
 
-        let url = App.getSetting('url'),
-            interval = App.getSetting('interval');
+        let badRequest = false,
+            url = App.getSetting('url'),
+            interval = App.getSetting('interval'),
+            isCPREnabled = App.getSetting('send-heartbeat');
 
         request.get(url)
             .query({
                 interval: interval
             }).end((error, response) => {
+                // If no errors & json returned from the server
                 if (response.type === "application/json" && !error) {
+
+                    // Parse response from server
                     let body = App.tryParseJSON(response.text);
-                    this.updateLastHeartbeat(body.expires_on);
+
+                    // If succcessful
+                    if (response.status === 200 && body.success === true) {
+
+                        // Reset errors, update heartbeat
+                        this.heartbeatErrorCount = 0;
+                        this.updateLastHeartbeat(body.expires_on);
+
+                        // Perform another heartbeat
+                        if (isCPREnabled == "true") {
+                            cprTimer.stop();
+                            this.performCPR();
+                        }
+
+                        // If successful, no need to go any further
+                        return true;
+                    } else {
+                        badRequest = true;
+                    }
+                }
+
+                this.heartbeatErrorCount++;
+                if (this.heartbeatErrorCount > 2) {
+                    alert((!badRequest) ? messages.errors.badRequest : messages.errors.general);
+                    this.stopCPR();
                 }
             })
     }
 
+    get heartbeatErrorCount() {
+        return this._heartbeatErrorCount;
+    }
+
+    set heartbeatErrorCount(val) {
+        this._heartbeatErrorCount = val;
+    }
+
+    stopCPR() {
+        this.heartbeatCheckbox.checked = false;
+        cprTimer.stop();
+    }
+
     /**
-     * updateLastHeartbeat() update last
+     * updateLastHeartbeat() Update last ping on UI
      *
      * @param  {String} expires_on when heartbeat expires on the server
      * @return void
      */
     updateLastHeartbeat(expires_on) {
 
-        let now = moment();
-        let nowHR = now.format("DD/MM/YY hh:mm A");
-        let expiresHR = moment(expires_on).format('DD/MM/YY hh:mm A');
+        let nowHR = moment().format("DD/MM/YY hh:mm A"),
+            expiresHR = moment(expires_on).format('DD/MM/YY hh:mm A');
 
-        App.setSetting('last-heartbeat', nowHR);
-        App.setSetting('last-heartbeat-expiry', expiresHR);
         this.lastHeartbeat.innerHTML = nowHR;
         this.lastHeartbeat.title = 'Expires on: ' + expiresHR;
+        App.setSetting('last-heartbeat', nowHR);
+        App.setSetting('last-heartbeat-expiry', expiresHR);
     }
 
     /**
