@@ -566,4 +566,4 @@ class App {
 };
 
 // On load start the app
-window.addEventListener('load', () => new App());
+window.addEventListener('DOMContentLoaded', () => new App());
