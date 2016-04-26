@@ -20,6 +20,7 @@
     "url": "https://github.com/kingsloi/iskingsley.online.git"
   },
   "dependencies": {
+    "animate.css-js": "0.0.8",
     "bootstrap-sass": "^3.3.6",
     "fs-jetpack": "^0.7.0",
     "jquery": "^2.2.3",
