@@ -1,5 +1,5 @@
 {
-  "name": "AreYouOnline",
+  "name": "areyouonline",
   "productName": "Are You Online",
   "description": "A simple app to ping a given url every x minutes so your friends/family/colleagues know if you're online",
   "keywords": [
@@ -20,12 +20,22 @@
     "url": "https://github.com/kingsloi/iskingsley.online.git"
   },
   "dependencies": {
+    "animate.css-js": "0.0.8",
     "bootstrap-sass": "^3.3.6",
     "fs-jetpack": "^0.7.0",
+    "human-readable-time": "^0.2.3",
+    "install": "^0.6.1",
     "jquery": "^2.2.3",
     "menubar": "github:maxogden/menubar#pull/117/head",
+    "moment": "^2.13.0",
+    "npm": "^3.8.7",
+    "pauseable": "^0.1.6",
     "shell": "^0.3.2",
-    "superagent": "^1.8.3"
+    "superagent": "^1.8.3",
+    "superagent-logger": "^1.1.0",
+    "time-ago": "^0.1.0",
+    "timer-stopwatch": "^0.2.0",
+    "validator": "^5.2.0"
   },
   "packageNameTemplate": "{{name}}-v{{version}}-{{platform}}-{{arch}}",
   "osx": {
@@ -40,6 +50,9 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "menubar": "github:maxogden/menubar#pull/117/head"
+    "install": "^0.6.1",
+    "menubar": "github:maxogden/menubar#pull/117/head",
+    "npm": "^3.8.7",
+    "superagent-logger": "^1.1.0"
   }
 }

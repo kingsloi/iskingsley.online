@@ -1,524 +1,707 @@
-/*global navigator, localStorage: false, console: false, $: false */
-// Imports
+"use strict";
 
-import os from 'os';
-import request from 'superagent';
-import {
-    remote,
-    ipcRenderer
-} from 'electron';
-import jetpack from 'fs-jetpack';
-import env from './env';
+// Core
+import os from "os";
+import { remote, ipcRenderer } from "electron";
+import jetpack from "fs-jetpack";
+import env from "./env";
 
-// Globals
-var app = remote.app;
-var ipc = ipcRenderer;
-var shell = remote.shell;
-var appDir = jetpack.cwd(app.getAppPath());
+// Plugins
+import request from "superagent";
+import logger from "superagent-logger";
+import validator from "validator";
+import animateCss from "animate.css-js";
+import stopwatch from "timer-stopwatch";
+import moment from "moment";
 
-// App
-(function ($) {
+// Helpers
+import "./helpers/context-menu";
+import "./helpers/external-links";
 
-    'use strict';
+// Global Node variables
+let app = remote.app;
+let ipc = ipcRenderer;
+let shell = remote.shell;
+let appDir = jetpack.cwd(app.getAppPath());
 
-    var App = function () {
+// Global App variables
+let cprTimer;
 
-        var timeout;
-        var flatline = false;
+// Global Constants
+const DATETIME_FORMAT = "DD/MM/YY hh:mm A";
+const messages = {
+    errors: {
+        general: "Ooops! There was a problem with the URL you've supplied. Please check it and try again",
+        badRequest: "Heartbeat refused by the server. Incorrect password maybe?"
+    },
+    confirm: {
+        reset: "Are you sure you want to reset the application?",
+        exit: "Are you sure you want to exit?"
+    }
+};
 
-        var $save = $('#save');
-        var $model = $(".model");
-        var $url = $("#url__value");
-        var $reset = $("#reset-settings");
-        var $go_offline = $('#go-offline');
-        var $actions = $('.actions button');
-        var $enabled = $("#enabled__value");
-        var $interval = $("#interval__value");
-        var $heartbeat = $(".heartbeat__value");
+let getElmById = id => document.getElementById(id);
 
-        var errors = {
-            heartbeat: {
-                count: 0,
-                message: "Ooops! There was a problem with the URL you've supplied. Please check it and try again!",
-                badRequest: "Heartbeat refused by the server. Incorrect password maybe?"
-            },
-            flatline: {
-                count: 0,
-                message: "Ooops! There was a problem with sending the offline command. Please check the URL (" + localStorage.getItem('is_online--url') + "&offline=1) and try again.",
-                badRequest: "Flatline refused by the server. Incorrect password maybe?"
-            }
-        };
+class App {
 
-        /**
-         * Set heartbeat datetime
-         * @param heartbeat_datetime date/time of last ping
-         */
-        var setHeartbeatDateTime = function (heartbeat_datetime) {
-            localStorage.setItem('is_online--heartbeat', heartbeat_datetime);
-        };
+    constructor() {
 
-        /**
-         * Get last heartbeat
-         * @return string | false
-         */
-        var getHeartbeatDateTime = function () {
-            if (localStorage.getItem('is_online--heartbeat')) {
-                return localStorage.getItem('is_online--heartbeat');
-            }
+        this.flatline = false;
+        this.flatlineErrorCount = 0;
+        this.heartbeatErrorCount = 0;
+        this.flatlineBadRequest = false;
+        this.heartbeatBadRequest = false;
+
+        // Shortcut to DOM elements
+        this.model = getElmById("model");
+        this.urlInput = getElmById("url");
+        this.exitButton = getElmById("exit");
+        this.saveButton = getElmById("save");
+        this.appContainer = getElmById("app");
+        this.settingsForm = getElmById("settings");
+        this.pingNowButton = getElmById("ping-now");
+        this.intervalInput = getElmById("interval");
+        this.offlineButton = getElmById("go-offline");
+        this.resetButton = getElmById("reset-settings");
+        this.lastHeartbeat = getElmById("last-heartbeat");
+        this.closeModelButton = getElmById("close-model");
+        this.heartbeatCheckbox = getElmById("send-heartbeat");
+
+        // Event Listeners
+        this.exitButton.addEventListener("click", () => this.exit());
+        this.saveButton.addEventListener("click", () => this.saveSettings());
+        this.offlineButton.addEventListener("click", () => this.goOffline());
+        this.resetButton.addEventListener("click", () => App.resetSettings());
+        this.urlInput.addEventListener("input", () => this.toggleSaveButton());
+        this.settingsForm.addEventListener("submit", e => this.submitForm(e));
+        this.pingNowButton.addEventListener("click", () => this.sendHeartbeat());
+        this.closeModelButton.addEventListener("click", e => this.closeModel(e));
+        this.intervalInput.addEventListener("input", () => this.toggleSaveButton());
+        this.intervalInput.addEventListener("keydown", e => this.validateInterval(e));
+        this.heartbeatCheckbox.addEventListener("change", () => this.toggleSaveButton());
+
+        // Load previously saved settings
+        Object.keys(localStorage).forEach(key =>
+            this.getSettings(key, localStorage[key])
+        );
+
+        this.init();
+    }
+
+    /**
+     * resetSettings() reset settings/application
+     * from scratch
+     *
+     * @return void
+     */
+    static resetSettings() {
+        let sure = confirm(messages.confirm.reset);
+        if (sure) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
+
+    /**
+     * setSetting() Set setting stored
+     * in local storage
+     *
+     * @param  {String} key   element ID
+     * @param  {String} value stored value
+     * @return void
+     */
+    static setSetting(key, value) {
+        localStorage.setItem(key, value);
+    }
+
+    /**
+     * getSetting() Get item from
+     * settings in localstorage
+     *
+     * @param  {String} key Key stored in localstorage
+     * @return {Mixed}      Value from localstorage
+     */
+    static getSetting(key) {
+        return localStorage.getItem(key);
+    }
+
+    /**
+     * get flatline() fetch heartbeat
+     * ajax errors
+     *
+     * @return {Number} number of heartbeat errors
+     */
+    get flatline() {
+        return this._flatline;
+    }
+
+    /**
+     * set flatline() set flatline
+     * ajax error count
+     *
+     * @param  {Number} val flatline error count
+     * @return void
+     */
+    set flatline(val) {
+        this._flatline = val;
+    }
+
+    /**
+     * get heartbeatErrorCount() fetch heartbeat
+     * ajax errors
+     *
+     * @return {Number} number of heartbeat errors
+     */
+    get heartbeatErrorCount() {
+        return this._heartbeatErrorCount;
+    }
+
+    /**
+     * set flatlineErrorCount() set flatline
+     * ajax error count
+     *
+     * @param  {Number} val flatline error count
+     * @return void
+     */
+    set flatlineErrorCount(val) {
+        this._flatlineErrorCount = val;
+    }
+
+    /**
+     * get flatlineErrorCount() fetch flatline
+     * ajax errors
+     *
+     * @return {Number} number of flatline errors
+     */
+    get flatlineErrorCount() {
+        return this._flatlineErrorCount;
+    }
+
+    /**
+     * set heartbeatErrorCount() set heartbeat
+     * ajax error count
+     *
+     * @param  {Number} val heartbeat error count
+     * @return void
+     */
+    set heartbeatErrorCount(val) {
+        this._heartbeatErrorCount = val;
+    }
+
+    /**
+     * registerIpcEvents() Register render process events
+     * called from main js
+     *
+     * @todo improve maybe but not sure how :(
+     * @return void
+     */
+    registerIpcEvents() {
+        ipc.on("OnCreateOrShowEvents", () => {
+            this.toggleGoOfflineButton();
+            this.toggleDisconnectModel();
+        });
+        /*
+        let shortcut = remote.require("global-shortcut");
+        shortcut.register("ctrl+alt+s", function () {
+            alert("here");
+        });
+        */
+    }
+
+    /**
+     * init() on start of application
+     *
+     * @return void
+     */
+    init() {
+        this.registerIpcEvents();
+        this.toggleGoOfflineButton();
+        this.toggleDisconnectModel();
+        if (this.heartbeatCheckbox.checked === true) {
+            this.sendHeartbeat();
+        }
+    }
+
+    /**
+     * exit() Exit application
+     *
+     * @return void
+     */
+    exit() {
+        let sure = confirm(messages.confirm.exit);
+        if (sure) {
+            ipc.send("exit");
+        }
+    }
+
+    /**
+     * submitForm() On form submit
+     * prevent submit/refresh
+     *
+     * @param  {Event} e Form submit event
+     * @return void
+     */
+    submitForm(e) {
+        e.preventDefault();
+    }
+
+    /**
+     * saveSettings() Save/persist
+     * the form settings
+     *
+     * @return void
+     */
+    saveSettings() {
+        if (!this.validateInput()) {
+            this.showModel("failure");
             return false;
-        };
-
-        /**
-         * Set heartbeat expiry
-         * @param heartbeat expiry datetime from the server
-         */
-        var setHeartbeatExpiry = function (heartbeat_expiry) {
-            localStorage.setItem('is_online--heartbeat-expires-on', heartbeat_expiry);
-        };
-
-        /**
-         * Get heartbeat expiry
-         * @return string | false
-         */
-        var getHeartbeatExpiry = function () {
-            if (localStorage.getItem('is_online--heartbeat-expires-on')) {
-                return localStorage.getItem('is_online--heartbeat-expires-on');
-            }
-            return false;
-        };
-
-        /**
-         * Get last heartbeat
-         * @return void
-         */
-        var getLastHeartbeat = function () {
-            if (getHeartbeatDateTime()) {
-                $heartbeat.html(getHeartbeatDateTime());
-                $heartbeat.prop('title', 'Expires: ' + getHeartbeatExpiry());
-            }
-        };
-
-        /**
-         * Clear settings from localstorage
-         * @return void
-         */
-        var removeSettings = function () {
-            localStorage.removeItem('is_online--url');
-            localStorage.removeItem('is_online--interval');
-            localStorage.removeItem('is_online--enabled');
-        };
-
-        /**
-         * Set settings to localstorage
-         * @return void
-         */
-        var setSettings = function () {
-            localStorage.setItem('is_online--url', $.trim($url.val()));
-            localStorage.setItem('is_online--interval', $.trim($interval.val()));
-            localStorage.setItem('is_online--enabled', $enabled.is(":checked"));
-        };
-
-        /**
-         * Get settings from localstorage
-         * @return void
-         */
-        var getSettings = function () {
-            if (localStorage.getItem('is_online--url')) {
-                $url.val(localStorage.getItem('is_online--url'));
-            }
-            if (localStorage.getItem('is_online--interval')) {
-                $interval.val(localStorage.getItem('is_online--interval'));
-            }
-            if (localStorage.getItem('is_online--enabled')) {
-                if (localStorage.getItem('is_online--enabled') === true) {
-                    $enabled.prop('checked', true);
-                }
-            }
-        };
-
-        /**
-         * Is user connected to wifi/lan?
-         * @return boolean
-         */
-        function isUserConnectedToInternet() {
-            return ((navigator.onLine) ? true : false);
         }
 
-        /**
-         * Toggle disconnected model
-         * @return boolean Whether online or offline
-         */
-        var toggleDisconnectedModel = function () {
-            var online = isUserConnectedToInternet();
-            if (!online) {
-                showModel('disconnected');
-                $actions.attr("disabled", true);
-                return false;
-            }
-            hideModel();
-            $actions.attr("disabled", false);
-            return true;
-        };
+        this.toggleSaveButton("hide");
 
-        /**
-         * Show/hide go offline button if heartbeat has/hasn't expired
-         * @return boolean Whether heartbeat has expired
-         */
-        var toggleGoOfflineButton = function () {
-            var now = new Date();
-            var expiry = getHeartbeatExpiry();
-            expiry = ((expiry !== "false") ? new Date(getHeartbeatExpiry()) : false);
+        let url = this.urlInput;
+        let interval = this.intervalInput;
+        let heartbeat = this.heartbeatCheckbox;
 
-            if (now > expiry || expiry == "false" || flatline === true) {
-                $enabled.prop('checked', false);
-                setSettings();
-                $go_offline.hide();
+        App.setSetting("url", url.value);
+        App.setSetting("interval", interval.value);
+        App.setSetting("send-heartbeat", heartbeat.checked);
+        this.showModel("success");
+
+        if (cprTimer) cprTimer.stop();
+
+        // If heartbeat isn't enabled, staph
+        if (heartbeat.checked === false) return false;
+
+        this.sendHeartbeat();
+        this.toggleGoOfflineButton();
+    }
+
+    /**
+     * performCPR() Send a heartbeat
+     * every x seconds
+     *
+     * @return void
+     */
+    performCPR() {
+        if (cprTimer) cprTimer.stop();
+        let interval = App.getSetting("interval") * 60000;
+        cprTimer = new stopwatch(interval);
+        cprTimer.start();
+        cprTimer.onDone(() => this.sendHeartbeat());
+    }
+
+    /**
+     * sendHeartbeat() Ping the server
+     *
+     * @return {Boolean} whether success or not
+     */
+    sendHeartbeat() {
+        if (!App.isUserConnectedToInternet()) {
+            let isCPREnabled = App.getSetting("send-heartbeat");
+            if (isCPREnabled == "true") this.performCPR();
+            return false;
+        }
+
+        let url = App.getSetting("url"),
+            interval = App.getSetting("interval");
+
+        request.get(url)
+            .query({
+                interval: interval
+            }).end((error, response) => {
+                let success = this.successfulHeartbeat(error, response);
+                if (success) {
+                    this.unsuccessfulHeartbeat();
+                    return false;
+                }
                 return true;
-            }
-
-            $go_offline.show();
-            return false;
-        };
-
-        /**
-         * Tasks executed by main process
-         * @return void
-         */
-        var registerIpcEvents = function () {
-            ipc.on('OnCreateOrShowEvents', function () {
-                getLastHeartbeat();
-                toggleGoOfflineButton();
-                toggleDisconnectedModel();
             });
-        };
+    }
 
-        /**
-         * Send heartbeat to specified URL
-         * @return boolean
-         */
-        var sendHeartBeat = function () {
-            if (!isUserConnectedToInternet()) {
-                return false;
-            }
-            var badRequest = false;
+    /**
+     * successfulHeartbeat() What happens on
+     * sucessful heartbeat
+     *
+     * @param  {Objecy}  error     Error from request
+     * @param  {Object}  response  Response of ajax request
+     * @return {Boolean}           Whether success or not
+     */
+    successfulHeartbeat(error, response) {
+        let isCPREnabled = App.getSetting("send-heartbeat");
+        if (response.type === "application/json" && !error) {
+            let body = App.tryParseJSON(response.text);
+            if (response.status === 200 && body.success === true) {
+                this.heartbeatErrorCount = 0;
+                this.heartbeatBadRequest = false;
 
-            request
-                .get(localStorage.getItem('is_online--url'))
-                .query({
-                    interval: localStorage.getItem('is_online--interval')
-                })
-                .end(function (error, response) {
-                    if (response.type === "application/json" && !error) {
-                        var body = tryParseJSON(response.text);
-                        if (response.status === 200 && body.success === true) {
-                            errors.heartbeat.count = 0;
-                            updateHeartbeat(body.expires_on);
-                            return true;
-                        }
-                        badRequest = true;
-                    }
-
-                    errors.heartbeat.count++;
-                    if (errors.heartbeat.count > 2) {
-                        alert((!badRequest) ? errors.heartbeat.message : errors.heartbeat.badRequest);
-                        $enabled.prop('checked', false);
-                        clearTimeout(timeout);
-                    }
-                    return false;
-                });
-        };
-
-        /**
-         * Send offline signal to server
-         * @return boolean
-         */
-        var sendFlatline = function () {
-            if (!isUserConnectedToInternet()) {
-                return false;
-            }
-            var badRequest = false;
-
-            request
-                .get(localStorage.getItem('is_online--url'))
-                .query({
-                    offline: '1'
-                })
-                .end(function (error, response) {
-
-                    if (response.type === "application/json" && !error) {
-                        var body = tryParseJSON(response.text);
-                        if (response.status === 200 && body.success === true) {
-                            flatline = true;
-                            showModel('success');
-                            errors.flatline.count = 0;
-                            setHeartbeatExpiry(false);
-                            updateHeartbeat(body.expires_on);
-                            toggleGoOfflineButton('hide');
-                            return true;
-                        }
-                        badRequest = true;
-                    }
-
-                    errors.flatline.count++;
-                    if (errors.flatline.count > 2) {
-                        alert((!badRequest) ? errors.flatline.message : errors.flatline.badRequest);
-                        $enabled.prop('checked', false);
-                    }
-                    return false;
-                });
-        };
-
-        /**
-         * On Form save
-         * @return boolean
-         */
-        var saveSettings = function () {
-            $('#settings').submit(function (e) {
-                e.preventDefault();
-
-                var error = false;
-                flatline = false;
-                clearTimeout(timeout);
-
-                $url.parent().removeClass('has-error');
-                $interval.parent().parent().removeClass('has-error');
-
-                if ($enabled.is(":checked")) {
-                    if ($.trim($url.val()) == "") {
-                        $url.parent().addClass('has-error');
-                        error = true;
-                    }
-                    if ($.trim($interval.val()) == "") {
-                        $interval.parent().parent().addClass('has-error');
-                        error = true;
-                    }
-                }
-
-                if (!error) {
-                    showModel('success');
-                    setSettings();
-                    toggleSaveButton('hide');
-                    if ($enabled.is(":checked")) {
-                        sendHeartBeat();
-                        performCPR();
-                    }
-                    return true;
-                }
-                showModel('failure');
-                return false;
-            });
-        };
-
-        /**
-         * On go offline button click
-         * @return void
-         */
-        var goOffline = function () {
-            $go_offline.click(function (e) {
-                e.preventDefault();
-                sendFlatline();
-            });
-        };
-
-        /**
-         * Send timed heartbeats
-         * @return void
-         */
-        var performCPR = function () {
-            if ($enabled.is(":checked")) {
-                sendHeartBeat();
-                clearTimeout(timeout);
-                timeout = setTimeout(performCPR, localStorage.getItem('is_online--interval') * 60000);
-            }
-        };
-
-        /**
-         * Update last ping timestamp
-         * @return void
-         */
-        function updateHeartbeat(expires_on) {
-
-            var now = getDateTime();
-
-            if (!expires_on) {
-                $heartbeat.html('-');
-                $heartbeat.prop('title', null);
+                this.updateLastHeartbeat(body.expires_on);
+                this.toggleGoOfflineButton();
+                if (isCPREnabled === "true") this.performCPR();
+                return true;
             } else {
-                $heartbeat.html(now);
-                $heartbeat.prop('title', 'Expires: ' + expires_on);
-                setHeartbeatDateTime(now);
-                setHeartbeatExpiry(expires_on);
+                this.heartbeatBadRequest = true;
             }
+        }
+        return false;
+    }
 
-            toggleGoOfflineButton();
+    /**
+     * unsuccessfulHeartbeat() What happens on
+     * unsucessful heartbeat
+     *
+     * @return void
+     */
+    unsuccessfulHeartbeat() {
+        this.heartbeatErrorCount++;
+        if (this.heartbeatErrorCount > 2) {
+            alert(!this.heartbeatBadRequest ? messages.errors.badRequest : messages.errors.general);
+            this.stopCPR();
+        }
+    }
+
+    /**
+     * sendHeartbeat() Ping the server
+     * with the go offline signal
+     *
+     * @return {Boolean} whether success or not
+     */
+    sendFlatline() {
+        if (!App.isUserConnectedToInternet()) return false;
+
+        let url = App.getSetting("url");
+
+        request.get(url)
+            .query({
+                offline: "1"
+            }).end((error, response) => {
+                let success = this.successfulFlatline(error, response);
+                if (!success) {
+                    this.unsuccessfulFlatline();
+                    return false;
+                }
+                return true;
+            });
+    }
+
+    /**
+     * successfulFlatline() What happens on
+     * sucessful flatline
+     *
+     * @param  {Objecy}  error     Error from request
+     * @param  {Object}  response  Response of ajax request
+     * @return {Boolean}           Whether success or not
+     */
+    successfulFlatline(error, response) {
+        if (response.type === "application/json" && !error) {
+            let body = App.tryParseJSON(response.text);
+            if (response.status === 200 && body.success === true) {
+                this.flatline = true;
+                this.flatlineBadRequest = false;
+                this.heartbeatErrorCount = 0;
+                this.updateLastHeartbeat(body.expires_on);
+                this.stopCPR();
+                this.toggleGoOfflineButton();
+                return true;
+            } else {
+                this.flatlineBadRequest = true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * unsuccessfulFlatline() What happens on
+     * unsucessful flatline
+     *
+     * @return void
+     */
+    unsuccessfulFlatline() {
+        this.flatlineErrorCount++;
+        if (this.flatlineErrorCount > 2) {
+            alert(!this.flatlineBadRequest ? messages.errors.badRequest : messages.errors.general);
+            this.stopCPR();
+        }
+        this.sendFlatline();
+    }
+
+    /**
+     * stopCPR() Stop automatic pings/CPR
+     * to server
+     *
+     * @return void
+     */
+    stopCPR() {
+        this.heartbeatCheckbox.checked = false;
+        App.setSetting("send-heartbeat", "false");
+        if (cprTimer) cprTimer.stop();
+    }
+
+    /**
+     * updateLastHeartbeat() Update last ping on UI
+     *
+     * @param  {String} expires_on when heartbeat expires on the server
+     * @return void
+     */
+    updateLastHeartbeat(expires_on) {
+        let expiry = expires_on ? moment(expires_on) : moment().subtract(1, "minute");
+
+        let nowHR = moment().format(DATETIME_FORMAT),
+            expiresHR = expiry.format(DATETIME_FORMAT);
+
+        this.lastHeartbeat.innerHTML = nowHR;
+        this.lastHeartbeat.title = expires_on ? "Expires on: " + expiresHR : "Expired";
+
+        App.setSetting("last-heartbeat", nowHR);
+        App.setSetting("last-heartbeat-expiry", expiresHR);
+    }
+
+    /**
+     * validateInterval() Don't allow
+     * non-numberic characters from input
+     *
+     * @param  {Event} e Keydown event
+     * @return void
+     */
+    validateInterval(e) {
+        let character = e.charCode ? e.charCode : e.keyCode;
+
+        if (character !== 8 && (character < 48 || character > 57)) {
+            e.preventDefault();
+        }
+    }
+
+    /**
+     * validateInput() Validate input fields
+     * for save
+     *
+     * @return {Boolean} whether or not input was valid
+     */
+    validateInput() {
+
+        let url = this.urlInput;
+        let interval = this.intervalInput;
+        let heartbeat = this.heartbeatCheckbox;
+
+        if (heartbeat.checked === false) return true;
+
+        let urlOpts = { require_protocol: true };
+
+        // Remove any other errors
+        url.parentElement.classList.remove("has-error");
+        interval.parentElement.classList.remove("has-error");
+
+        // Trim whitespace
+        url.value = url.value.trim();
+        interval.value = interval.value.trim();
+
+        // Validate all the things
+        let isURLValid = !validator.isNull(url.value) && validator.isURL(url.value, urlOpts);
+        let isIntervalValid = validator.isNumeric(interval.value);
+
+        // If not valid, add error classes
+        if (!isURLValid) url.parentElement.classList.add("has-error");
+        if (!isIntervalValid) interval.parentElement.classList.add("has-error");
+
+        return isURLValid && isIntervalValid;
+    }
+
+    /**
+     * getSettings() Apply setting stored
+     * in local storage
+     *
+     * @param  {String} key   element ID
+     * @param  {String} value stored value
+     * @return void
+     */
+    getSettings(key, value) {
+        let element = getElmById(key);
+        if (element) {
+            if (element.type === "checkbox") {
+                element.checked = value === "true";
+            } else if (element.type === "text") {
+                element.value = value;
+            } else {
+                element.innerHTML = value;
+            }
         }
 
-        /**
-         * Check for user input on any of the inputs, showing settings button
-         * if text/checkbox gets touched by the user
-         * @return void
-         */
-        var checkForInput = function () {
-            $(':text').keypress(function (e) {
-                toggleSaveButton();
-            });
-            $(':text').keyup(function (e) {
-                if (e.toggleSaveButton == 8 || e.keyCode == 46) {
-                    enableSaveBtn();
-                } else {
-                    e.preventDefault();
-                }
-            });
-            $(':text').bind('paste', function (e) {
-                toggleSaveButton();
-            });
-            $(':checkbox').change(function (e) {
-                toggleSaveButton();
-            });
-        };
+        if (key === "last-heartbeat-expiry") {
+            this.lastHeartbeat.title = "Expires on: " + value;
+        }
+    }
 
-        /**
-         * Exit application
-         * @return void
-         */
-        var registerButtonClicks = function () {
-            $('#ping-now').click(function (e) {
-                e.preventDefault();
-                sendHeartBeat();
-                toggleGoOfflineButton();
-            });
-            $('#close-model').click(function (e) {
-                e.preventDefault();
-                hideModel();
-            });
-            $('#exit-application a').click(function (e) {
-                e.preventDefault();
-                var exit = confirm("Are you sure you want to exit?");
-                if (exit === true) {
-                    app.quit();
-                }
-            });
-        };
+    /**
+     * showModel() Show model
+     *
+     * @param  {String} type type of model to show
+     * @return void
+     */
+    showModel(type) {
+        this.hideModel();
+        switch (type) {
+            case "success":
+                this.model.classList.add("model--is-success");
+                this.animate("fadeinout");
+                break;
+            case "failure":
+                this.model.classList.add("model--is-failure");
+                this.animate("fadeinout");
+                break;
+            case "disconnected":
+                this.model.classList.add("model--is-disconnected");
+                break;
+        }
+    }
 
-        /**
-         * On clear button click
-         * @return void
-         */
-        var clearSettings = function () {
-            $reset.click(function (e) {
-                e.preventDefault();
-                var reset = confirm("Are you sure you want clear your settings and reset the application?");
-                if (reset === true) {
-                    removeSettings();
-                    location.reload();
-                }
-            });
-        };
+    /**
+     * hideModel() Hide the model
+     * and remove the success/error classes
+     *
+     * @return void
+     */
+    hideModel() {
+        this.model.classList.remove("model--is-failure");
+        this.model.classList.remove("model--is-success");
+        this.model.classList.remove("model--is-disconnected");
+    }
 
-        /**
-         * Try parse json
-         * @param  string json json string to validate
-         * @return string | boolean
-         */
-        function tryParseJSON(json) {
-            try {
-                var o = JSON.parse(json);
+    /**
+     * closeModel() Close the model
+     *
+     * @return void
+     */
+    closeModel(e) {
+        e.preventDefault();
+        this.hideModel();
+    }
 
-                // Handle non-exception-throwing cases:
-                // Neither JSON.parse(false) or JSON.parse(1234) throw errors, hence the type-checking,
-                // but... JSON.parse(null) returns 'null', and typeof null === "object",
-                // so we must check for that, too.
-                if (o && typeof o === "object" && o !== null) {
-                    return o;
-                }
-            } catch (e) {
-                console.log(e);
-            }
+    /**
+     * isElementVisible() Is element visible
+     * on the screen?
+     *
+     * @param  {Element}  el Element to check if visible
+     * @return {Boolean}     If visible or not
+     */
+    static isElementVisible(el) {
+        let style = window.getComputedStyle(el);
+        return style.width !== "" &&
+            style.height !== "" &&
+            style.opacity !== "" &&
+            style.display !== "none" &&
+            style.visibility !== "hidden";
+    }
+
+    /**
+     * toggleSaveButton() Toggle save button
+     * if input has been edited
+     *
+     * @param  {String} type Override show/hide
+     * @return {Mixed}
+     */
+    toggleSaveButton(type = "show") {
+        let isVisible = App.isElementVisible(this.saveButton);
+        if (type === "hide") {
+            this.saveButton.style.display = "none";
+        } else if (isVisible && type === "show") {
+            return false;
+        } else {
+            this.saveButton.style.display = "inline-block";
+        }
+    }
+
+    /**
+     * toggleGoOfflineButton() If ping is currently valid
+     * allow user to go offline
+     *
+     * @return {Boolean} Whether is visible or not
+     */
+    toggleGoOfflineButton() {
+        let now = moment();
+        let expiry = moment(App.getSetting("last-heartbeat-expiry"), DATETIME_FORMAT);
+
+        if (!expiry.isValid() || !expiry.isAfter(now) || this.flatline) {
+            this.flatline = false;
+            this.offlineButton.style.display = "none";
             return false;
         }
+        this.offlineButton.style.display = "inline-block";
+        return true;
+    }
 
-        /**
-         * Hide model
-         * @return void
-         */
-        var hideModel = function () {
-            $model.removeClass('model--is-failure')
-                .removeClass('model--is-success')
-                .removeClass('model--is-disconnected');
-        };
-
-        /**
-         * Show model
-         * @param  string type Type of model to show (success/failure)
-         * @return void
-         */
-        var showModel = function (type) {
-            hideModel();
-            switch (type) {
-            case 'success':
-                $model.addClass('model--is-success').animateCss('fadeinout');
-                break;
-            case 'failure':
-                $model.addClass('model--is-failure').animateCss('fadeinout');
-                break;
-            case 'disconnected':
-                $model.addClass('model--is-disconnected');
-                break;
-            }
+    /**
+     * toggleDisconnectModel() If user is connected
+     * to the internet
+     *
+     * @return {Boolean} Whether user is on wifi/lan
+     */
+    toggleDisconnectModel() {
+        let online = App.isUserConnectedToInternet();
+        if (!online) {
+            this.showModel("disconnected");
+            return false;
         }
+        this.hideModel("disconnected");
+        return true;
+    }
 
-        /**
-         * Toggle save button
-         * @return boolean | void
-         */
-        function toggleSaveButton(type = 'show') {
-            if (type == 'show' && $save.is(":visible")) {
-                return false;
-            }
-            $save.toggle();
-        }
+    /**
+     * goOffline() on button click
+     * send flatline signal
+     *
+     * @return void
+     */
+    goOffline() {
+        this.showModel("success");
+        this.sendFlatline();
+    }
 
-        /**
-         * Get date time
-         * @return string
-         */
-        function getDateTime() {
-            var now = new Date();
-            return [
-                [AddZero(now.getDate()), AddZero(now.getMonth() + 1), now.getFullYear()].join("/"), [AddZero(now.getHours()), AddZero(now.getMinutes())].join(":"), now.getHours() >= 12 ? "PM" : "AM"
-            ].join(" ");
-        }
-
-        /**
-         * Add a 0 for single-digit date/time values
-         * @param int
-         * @return string
-         */
-        function AddZero(num) {
-            return (num >= 0 && num < 10) ? "0" + num : num + "";
-        }
-
-        return {
-            init: function () {
-
-                clearSettings();
-                checkForInput();
-                getSettings();
-                saveSettings();
-                goOffline();
-                registerButtonClicks();
-                registerIpcEvents();
-                toggleGoOfflineButton();
-                if ($enabled.is(":checked")) {
-                    sendHeartBeat();
-                    performCPR();
+    /**
+     * animate() Using animate.css
+     *
+     * @param  {String} animationType Animateion CSS class to use
+     * @return void
+     */
+    animate(animationType) {
+        animateCss.animate(this.model, {
+            animationName: animationType,
+            duration: 500,
+            callbacks: [
+                () => {
+                    // maybe?
                 }
+            ]
+        });
+    }
+
+    /**
+     * isUserConnectedToInternet() is connected user
+     * connected to LAN/WiFI
+     *
+     * @return {Boolean} Whether connected or not
+     */
+    static isUserConnectedToInternet() {
+        return !!navigator.onLine;
+    }
+
+    /**
+     * tryParseJSON() Try parse json
+     *
+     * @param  {String} json        json string to validate
+     * @return {String} | {Boolean}
+     */
+    static tryParseJSON(json) {
+        try {
+            let o = JSON.parse(json);
+            if (typeof o === "object" && o !== null) {
+                return o;
             }
-        };
-    }();
+        } catch (e) {
+            console.log(e);
+        }
+        return false;
+    }
+}
 
-    $(document).ready(function () {
-        App.init();
-    });
-
-})($);
+// On load start the app
+window.addEventListener("DOMContentLoaded", () => new App());
