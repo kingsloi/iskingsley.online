@@ -1,29 +1,26 @@
-(function () {
-    'use strict';
+"use strict";
 
-    var shell = require('electron').shell;
+import shell from "electron";
 
-    var supportExternalLinks = function (e) {
-        var href;
-        var isExternal = false;
+document.addEventListener("click", e => {
+    let isExternal = false;
+    let checkDomElement = element => {
+        let href = "";
 
-        var checkDomElement = function (element) {
-            if (element.nodeName === 'A') {
-                href = element.getAttribute('href');
-            }
-            if (element.classList.contains('js-external-link')) {
-                isExternal = true;
-            }
-            if (href && isExternal) {
-                shell.openExternal(href);
-                e.preventDefault();
-            } else if (element.parentElement) {
-                checkDomElement(element.parentElement);
-            }
+        if (element.nodeName === "A") {
+            href = element.getAttribute("href");
         }
 
-        checkDomElement(e.target);
-    }
+        if (element.classList.contains("js-external-link")) {
+            isExternal = true;
+        }
 
-    document.addEventListener('click', supportExternalLinks, false);
-}());
+        if (href && isExternal) {
+            shell.openExternal(href);
+            e.preventDefault();
+        } else if (element.parentElement) {
+            checkDomElement(element.parentElement);
+        }
+    };
+    checkDomElement(e.target);
+}, false);

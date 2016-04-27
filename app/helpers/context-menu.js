@@ -1,71 +1,69 @@
-(function () {
-    'use strict';
+"use strict";
 
-    var remote = require('electron').remote;
-    var shell = require('electron').shell;
-    var Menu = remote.Menu;
-    var MenuItem = remote.MenuItem;
+import {
+    remote,
+    shell
+} from "electron";
 
-    var isAnyTextSelected = function () {
-        return window.getSelection().toString() !== '';
-    };
+const Menu = remote.Menu;
+const MenuItem = remote.MenuItem;
 
-    var cut = new MenuItem({
-        label: "Cut",
-        click: function () {
-            document.execCommand("cut");
-        }
-    });
+let isAnyTextSelected = () => window.getSelection().toString() !== "";
 
-    var copy = new MenuItem({
-        label: "Copy",
-        click: function () {
-            document.execCommand("copy");
-        }
-    });
+let cut = new MenuItem({
+    label: "Cut",
+    click: () => {
+        document.execCommand("cut");
+    }
+});
 
-    var paste = new MenuItem({
-        label: "Paste",
-        click: function () {
-            document.execCommand("paste");
-        }
-    });
+let copy = new MenuItem({
+    label: "Copy",
+    click: () => {
+        document.execCommand("copy");
+    }
+});
 
-    var author = new MenuItem({
-        label: "Made with \u2665 by Kingsley Raspe",
-        click: function () {
-            shell.openExternal('http://kingsleyraspe.co.uk');
-        }
-    });
+let paste = new MenuItem({
+    label: "Paste",
+    click: () => {
+        document.execCommand("paste");
+    }
+});
 
-    var copyMenu = new Menu();
-    copyMenu.append(copy);
-    copyMenu.append(author);
+let author = new MenuItem({
+    label: "Made with \u2665 by Kingsley Raspe",
+    click: () => {
+        shell.openExternal("http://kingsleyraspe.co.uk");
+    }
+});
 
-    var textEditingMenu = new Menu();
-    textEditingMenu.append(cut);
-    textEditingMenu.append(copy);
-    textEditingMenu.append(paste);
-    textEditingMenu.append(author);
+let copyMenu = new Menu();
+copyMenu.append(copy);
+copyMenu.append(author);
 
-    var authorOnly = new Menu();
-    authorOnly.append(author);
+let textEditingMenu = new Menu();
+textEditingMenu.append(cut);
+textEditingMenu.append(copy);
+textEditingMenu.append(paste);
+textEditingMenu.append(author);
 
-    document.addEventListener('contextmenu', function (e) {
-        switch (e.target.nodeName) {
-        case 'TEXTAREA':
-        case 'INPUT':
+let authorOnly = new Menu();
+authorOnly.append(author);
+
+document.addEventListener("contextmenu", e => {
+    switch (e.target.nodeName) {
+    case "TEXTAREA":
+    case "INPUT":
+        e.preventDefault();
+        textEditingMenu.popup(remote.getCurrentWindow());
+        break;
+    default:
+        if (isAnyTextSelected()) {
             e.preventDefault();
-            textEditingMenu.popup(remote.getCurrentWindow());
-            break;
-        default:
-            if (isAnyTextSelected()) {
-                e.preventDefault();
-                copyMenu.popup(remote.getCurrentWindow());
-            } else {
-                authorOnly.popup(remote.getCurrentWindow());
-            }
+            copyMenu.popup(remote.getCurrentWindow());
+        } else {
+            authorOnly.popup(remote.getCurrentWindow());
         }
-    }, false);
-
-}());
+    }
+}, false);
