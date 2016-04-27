@@ -1,22 +1,22 @@
-'use strict';
+"use strict";
 
 // Core
-import os from 'os';
-import { remote, ipcRenderer } from 'electron';
-import jetpack from 'fs-jetpack';
-import env from './env';
+import os from "os";
+import { remote, ipcRenderer } from "electron";
+import jetpack from "fs-jetpack";
+import env from "./env";
 
 // Plugins
-import request from 'superagent';
-import logger from 'superagent-logger';
-import validator from 'validator';
-import animateCss from 'animate.css-js';
-import stopwatch from 'timer-stopwatch';
-import moment from 'moment';
+import request from "superagent";
+import logger from "superagent-logger";
+import validator from "validator";
+import animateCss from "animate.css-js";
+import stopwatch from "timer-stopwatch";
+import moment from "moment";
 
 // Helpers
-import './helpers/context-menu';
-import './helpers/external-links';
+import "./helpers/context-menu";
+import "./helpers/external-links";
 
 // Global Node variables
 let app = remote.app;
@@ -28,7 +28,7 @@ let appDir = jetpack.cwd(app.getAppPath());
 let cprTimer;
 
 // Global Constants
-const DATETIME_FORMAT = 'DD/MM/YY hh:mm A';
+const DATETIME_FORMAT = "DD/MM/YY hh:mm A";
 const messages = {
     errors: {
         general: "Ooops! There was a problem with the URL you've supplied. Please check it and try again",
@@ -38,7 +38,9 @@ const messages = {
         reset: "Are you sure you want to reset the application?",
         exit: "Are you sure you want to exit?"
     }
-}
+};
+
+let getElmById = id => document.getElementById(id);
 
 class App {
 
@@ -51,37 +53,37 @@ class App {
         this.heartbeatBadRequest = false;
 
         // Shortcut to DOM elements
-        this.model = document.getElementById('model');
-        this.urlInput = document.getElementById('url');
-        this.exitButton = document.getElementById('exit');
-        this.saveButton = document.getElementById('save');
-        this.appContainer = document.getElementById('app');
-        this.settingsForm = document.getElementById('settings');
-        this.pingNowButton = document.getElementById('ping-now');
-        this.intervalInput = document.getElementById('interval');
-        this.offlineButton = document.getElementById('go-offline');
-        this.resetButton = document.getElementById('reset-settings');
-        this.lastHeartbeat = document.getElementById('last-heartbeat');
-        this.closeModelButton = document.getElementById('close-model');
-        this.heartbeatCheckbox = document.getElementById('send-heartbeat');
+        this.model = getElmById("model");
+        this.urlInput = getElmById("url");
+        this.exitButton = getElmById("exit");
+        this.saveButton = getElmById("save");
+        this.appContainer = getElmById("app");
+        this.settingsForm = getElmById("settings");
+        this.pingNowButton = getElmById("ping-now");
+        this.intervalInput = getElmById("interval");
+        this.offlineButton = getElmById("go-offline");
+        this.resetButton = getElmById("reset-settings");
+        this.lastHeartbeat = getElmById("last-heartbeat");
+        this.closeModelButton = getElmById("close-model");
+        this.heartbeatCheckbox = getElmById("send-heartbeat");
 
         // Event Listeners
-        this.exitButton.addEventListener('click', () => this.exit());
-        this.saveButton.addEventListener('click', () => this.saveSettings());
-        this.offlineButton.addEventListener('click', () => this.goOffline());
-        this.resetButton.addEventListener('click', () => App.resetSettings());
-        this.urlInput.addEventListener('input', () => this.toggleSaveButton());
-        this.settingsForm.addEventListener('submit', (e) => this.submitForm(e));
-        this.pingNowButton.addEventListener('click', () => this.sendHeartbeat());
-        this.closeModelButton.addEventListener('click', (e) => this.closeModel(e));
-        this.intervalInput.addEventListener('input', () => this.toggleSaveButton());
-        this.intervalInput.addEventListener('keydown', (e) => this.validateInterval(e));
-        this.heartbeatCheckbox.addEventListener('change', () => this.toggleSaveButton());
+        this.exitButton.addEventListener("click", () => this.exit());
+        this.saveButton.addEventListener("click", () => this.saveSettings());
+        this.offlineButton.addEventListener("click", () => this.goOffline());
+        this.resetButton.addEventListener("click", () => App.resetSettings());
+        this.urlInput.addEventListener("input", () => this.toggleSaveButton());
+        this.settingsForm.addEventListener("submit", e => this.submitForm(e));
+        this.pingNowButton.addEventListener("click", () => this.sendHeartbeat());
+        this.closeModelButton.addEventListener("click", e => this.closeModel(e));
+        this.intervalInput.addEventListener("input", () => this.toggleSaveButton());
+        this.intervalInput.addEventListener("keydown", e => this.validateInterval(e));
+        this.heartbeatCheckbox.addEventListener("change", () => this.toggleSaveButton());
 
         // Load previously saved settings
-        for (let key in localStorage) {
-            this.getSettings(key, localStorage[key]);
-        }
+        Object.keys(localStorage).forEach(key =>
+            this.getSettings(key, localStorage[key])
+        );
 
         this.init();
     }
@@ -194,14 +196,14 @@ class App {
      * @return void
      */
     registerIpcEvents() {
-        ipc.on('OnCreateOrShowEvents', () => {
+        ipc.on("OnCreateOrShowEvents", () => {
             this.toggleGoOfflineButton();
             this.toggleDisconnectModel();
         });
         /*
-        let shortcut = remote.require('global-shortcut');
-        shortcut.register('ctrl+alt+s', function () {
-            alert('here');
+        let shortcut = remote.require("global-shortcut");
+        shortcut.register("ctrl+alt+s", function () {
+            alert("here");
         });
         */
     }
@@ -228,7 +230,7 @@ class App {
     exit() {
         let sure = confirm(messages.confirm.exit);
         if (sure) {
-            ipc.send('exit');
+            ipc.send("exit");
         }
     }
 
@@ -251,22 +253,22 @@ class App {
      */
     saveSettings() {
         if (!this.validateInput()) {
-            this.showModel('failure');
+            this.showModel("failure");
             return false;
         }
 
-        this.toggleSaveButton('hide');
+        this.toggleSaveButton("hide");
 
         let url = this.urlInput;
         let interval = this.intervalInput;
         let heartbeat = this.heartbeatCheckbox;
 
-        App.setSetting('url', url.value);
-        App.setSetting('interval', interval.value);
-        App.setSetting('send-heartbeat', heartbeat.checked);
-        this.showModel('success');
+        App.setSetting("url", url.value);
+        App.setSetting("interval", interval.value);
+        App.setSetting("send-heartbeat", heartbeat.checked);
+        this.showModel("success");
 
-        if (typeof cprTimer == "object") cprTimer.stop();
+        if (cprTimer) cprTimer.stop();
 
         // If heartbeat isn't enabled, staph
         if (heartbeat.checked === false) return false;
@@ -282,13 +284,11 @@ class App {
      * @return void
      */
     performCPR() {
-        if (typeof cprTimer == "object") cprTimer.stop();
-        let interval = App.getSetting('interval') * 60000;
+        if (cprTimer) cprTimer.stop();
+        let interval = App.getSetting("interval") * 60000;
         cprTimer = new stopwatch(interval);
         cprTimer.start();
-        cprTimer.onDone(() => {
-            this.sendHeartbeat();
-        });
+        cprTimer.onDone(() => this.sendHeartbeat());
     }
 
     /**
@@ -298,13 +298,13 @@ class App {
      */
     sendHeartbeat() {
         if (!App.isUserConnectedToInternet()) {
-            let isCPREnabled = App.getSetting('send-heartbeat');
+            let isCPREnabled = App.getSetting("send-heartbeat");
             if (isCPREnabled == "true") this.performCPR();
             return false;
         }
 
-        let url = App.getSetting('url'),
-            interval = App.getSetting('interval');
+        let url = App.getSetting("url"),
+            interval = App.getSetting("interval");
 
         request.get(url)
             .query({
@@ -316,7 +316,7 @@ class App {
                     return false;
                 }
                 return true;
-            })
+            });
     }
 
     /**
@@ -328,7 +328,7 @@ class App {
      * @return {Boolean}           Whether success or not
      */
     successfulHeartbeat(error, response) {
-        let isCPREnabled = App.getSetting('send-heartbeat');
+        let isCPREnabled = App.getSetting("send-heartbeat");
         if (response.type === "application/json" && !error) {
             let body = App.tryParseJSON(response.text);
             if (response.status === 200 && body.success === true) {
@@ -337,7 +337,7 @@ class App {
 
                 this.updateLastHeartbeat(body.expires_on);
                 this.toggleGoOfflineButton();
-                if (isCPREnabled == "true") this.performCPR();
+                if (isCPREnabled === "true") this.performCPR();
                 return true;
             } else {
                 this.heartbeatBadRequest = true;
@@ -355,7 +355,7 @@ class App {
     unsuccessfulHeartbeat() {
         this.heartbeatErrorCount++;
         if (this.heartbeatErrorCount > 2) {
-            alert((!this.heartbeatBadRequest) ? messages.errors.badRequest : messages.errors.general);
+            alert(!this.heartbeatBadRequest ? messages.errors.badRequest : messages.errors.general);
             this.stopCPR();
         }
     }
@@ -369,11 +369,11 @@ class App {
     sendFlatline() {
         if (!App.isUserConnectedToInternet()) return false;
 
-        let url = App.getSetting('url');
+        let url = App.getSetting("url");
 
         request.get(url)
             .query({
-                offline: '1'
+                offline: "1"
             }).end((error, response) => {
                 let success = this.successfulFlatline(error, response);
                 if (!success) {
@@ -381,7 +381,7 @@ class App {
                     return false;
                 }
                 return true;
-            })
+            });
     }
 
     /**
@@ -419,7 +419,7 @@ class App {
     unsuccessfulFlatline() {
         this.flatlineErrorCount++;
         if (this.flatlineErrorCount > 2) {
-            alert((!this.flatlineBadRequest) ? messages.errors.badRequest : messages.errors.general);
+            alert(!this.flatlineBadRequest ? messages.errors.badRequest : messages.errors.general);
             this.stopCPR();
         }
         this.sendFlatline();
@@ -433,8 +433,8 @@ class App {
      */
     stopCPR() {
         this.heartbeatCheckbox.checked = false;
-        App.setSetting('send-heartbeat', "false");
-        if (typeof cprTimer == "object") cprTimer.stop();
+        App.setSetting("send-heartbeat", "false");
+        if (cprTimer) cprTimer.stop();
     }
 
     /**
@@ -444,16 +444,16 @@ class App {
      * @return void
      */
     updateLastHeartbeat(expires_on) {
-        let expiry = ((expires_on) ? moment(expires_on) : moment().subtract(1, 'minute'));
+        let expiry = expires_on ? moment(expires_on) : moment().subtract(1, "minute");
 
         let nowHR = moment().format(DATETIME_FORMAT),
             expiresHR = expiry.format(DATETIME_FORMAT);
 
         this.lastHeartbeat.innerHTML = nowHR;
-        this.lastHeartbeat.title = ((expires_on) ? 'Expires on: ' + expiresHR : 'Expired');
+        this.lastHeartbeat.title = expires_on ? "Expires on: " + expiresHR : "Expired";
 
-        App.setSetting('last-heartbeat', nowHR);
-        App.setSetting('last-heartbeat-expiry', expiresHR);
+        App.setSetting("last-heartbeat", nowHR);
+        App.setSetting("last-heartbeat-expiry", expiresHR);
     }
 
     /**
@@ -465,10 +465,9 @@ class App {
      */
     validateInterval(e) {
         let character = e.charCode ? e.charCode : e.keyCode;
-        if (character !== 8) {
-            if (character < 48 || character > 57) {
-                e.preventDefault();
-            }
+
+        if (character !== 8 && (character < 48 || character > 57)) {
+            e.preventDefault();
         }
     }
 
@@ -516,18 +515,18 @@ class App {
      * @return void
      */
     getSettings(key, value) {
-        let element = document.getElementById(key);
+        let element = getElmById(key);
         if (element) {
-            if (element.type == "checkbox") {
-                element.checked = (value == 'true');
-            } else if (element.type == "text") {
+            if (element.type === "checkbox") {
+                element.checked = value === "true";
+            } else if (element.type === "text") {
                 element.value = value;
             } else {
                 element.innerHTML = value;
             }
         }
 
-        if (key == 'last-heartbeat-expiry') {
+        if (key === "last-heartbeat-expiry") {
             this.lastHeartbeat.title = "Expires on: " + value;
         }
     }
@@ -541,17 +540,17 @@ class App {
     showModel(type) {
         this.hideModel();
         switch (type) {
-        case 'success':
-            this.model.classList.add('model--is-success');
-            this.animate('fadeinout');
-            break;
-        case 'failure':
-            this.model.classList.add('model--is-failure');
-            this.animate('fadeinout');
-            break;
-        case 'disconnected':
-            this.model.classList.add('model--is-disconnected');
-            break;
+            case "success":
+                this.model.classList.add("model--is-success");
+                this.animate("fadeinout");
+                break;
+            case "failure":
+                this.model.classList.add("model--is-failure");
+                this.animate("fadeinout");
+                break;
+            case "disconnected":
+                this.model.classList.add("model--is-disconnected");
+                break;
         }
     }
 
@@ -562,9 +561,9 @@ class App {
      * @return void
      */
     hideModel() {
-        this.model.classList.remove('model--is-failure');
-        this.model.classList.remove('model--is-success');
-        this.model.classList.remove('model--is-disconnected');
+        this.model.classList.remove("model--is-failure");
+        this.model.classList.remove("model--is-success");
+        this.model.classList.remove("model--is-disconnected");
     }
 
     /**
@@ -589,8 +588,8 @@ class App {
         return style.width !== "" &&
             style.height !== "" &&
             style.opacity !== "" &&
-            style.display !== 'none' &&
-            style.visibility !== 'hidden';
+            style.display !== "none" &&
+            style.visibility !== "hidden";
     }
 
     /**
@@ -600,11 +599,11 @@ class App {
      * @param  {String} type Override show/hide
      * @return {Mixed}
      */
-    toggleSaveButton(type = 'show') {
+    toggleSaveButton(type = "show") {
         let isVisible = App.isElementVisible(this.saveButton);
-        if (type == 'hide') {
+        if (type === "hide") {
             this.saveButton.style.display = "none";
-        } else if (isVisible && type == 'show') {
+        } else if (isVisible && type === "show") {
             return false;
         } else {
             this.saveButton.style.display = "inline-block";
@@ -619,7 +618,7 @@ class App {
      */
     toggleGoOfflineButton() {
         let now = moment();
-        let expiry = moment(App.getSetting('last-heartbeat-expiry'), DATETIME_FORMAT);
+        let expiry = moment(App.getSetting("last-heartbeat-expiry"), DATETIME_FORMAT);
 
         if (!expiry.isValid() || !expiry.isAfter(now) || this.flatline) {
             this.flatline = false;
@@ -639,10 +638,10 @@ class App {
     toggleDisconnectModel() {
         let online = App.isUserConnectedToInternet();
         if (!online) {
-            this.showModel('disconnected');
+            this.showModel("disconnected");
             return false;
         }
-        this.hideModel('disconnected');
+        this.hideModel("disconnected");
         return true;
     }
 
@@ -653,7 +652,7 @@ class App {
      * @return void
      */
     goOffline() {
-        this.showModel('success');
+        this.showModel("success");
         this.sendFlatline();
     }
 
@@ -668,7 +667,7 @@ class App {
             animationName: animationType,
             duration: 500,
             callbacks: [
-                function () {
+                () => {
                     // maybe?
                 }
             ]
@@ -682,7 +681,7 @@ class App {
      * @return {Boolean} Whether connected or not
      */
     static isUserConnectedToInternet() {
-        return ((navigator.onLine) ? true : false);
+        return !!navigator.onLine;
     }
 
     /**
@@ -694,7 +693,7 @@ class App {
     static tryParseJSON(json) {
         try {
             let o = JSON.parse(json);
-            if (o && typeof o === "object" && o !== null) {
+            if (typeof o === "object" && o !== null) {
                 return o;
             }
         } catch (e) {
@@ -702,7 +701,7 @@ class App {
         }
         return false;
     }
-};
+}
 
 // On load start the app
-window.addEventListener('DOMContentLoaded', () => new App());
+window.addEventListener("DOMContentLoaded", () => new App());
