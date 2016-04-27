@@ -283,7 +283,8 @@ class App {
      */
     performCPR() {
         if (typeof cprTimer == "object") cprTimer.stop();
-        cprTimer = new stopwatch(1000);
+        let interval = App.getSetting('interval') * 60000;
+        cprTimer = new stopwatch(interval);
         cprTimer.start();
         cprTimer.onDone(() => {
             this.sendHeartbeat();
