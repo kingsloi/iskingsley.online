@@ -1,4 +1,5 @@
 <?php
+    date_default_timezone_set('Europe/London');
 
     // Update timestamp
     if(isset($_GET['password'])){
@@ -12,11 +13,12 @@
             $timeout = ($interval >= $timeout) ? $interval + 1 : $timeout;
 
             if(isset($_GET['offline']) && $_GET['offline'] == "1"){
-                $dateToWrite = date("Y-m-d H:i:s", strtotime(date("Y-m-d H:i:s")." -2 minutes"));
+
+                $dateToWrite = date("c", strtotime(date("c")." -2 minutes"));
                 $expires_on = false;
             }else{
-                $dateToWrite = date('Y-m-d H:i:s');
-                $expires_on = date("Y-m-d H:i:s", strtotime(date("Y-m-d H:i:s")." +{$timeout} minutes"));
+                $dateToWrite = date("c");
+                $expires_on = date("c", strtotime(date("c")." +{$timeout} minutes"));
             }
 
             file_put_contents('../private/last_updated.txt', $dateToWrite);
