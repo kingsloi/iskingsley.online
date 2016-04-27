@@ -1,30 +1,29 @@
-import {
-	app,
-	Menu,
-	Tray,
-	ipcMain as ipc
-} from 'electron';
+// Global
+import { app, Menu, Tray, ipcMain as ipc } from 'electron';
 import createMenubar from './helpers/window';
 import env from './env';
 import path from 'path';
 
 /**
  * Create menu bar
- * @type Object
+ *
+ * @type {Object}
  */
-var menubar = createMenubar({
+let menubar = createMenubar({
 	'index': 'file://' + __dirname + '/app.html',
 	'tooltip': 'Are You Online?',
 	'width': 350,
 	'height': 300,
-	'transparent': false
+	'transparent': false,
+	'preloadWindow': true
 });
 
 /**
  * After creating the menubar window
+ *
  * @return void
  */
-menubar.on('after-create-window', function () {
+menubar.on('after-create-window', () => {
 	if (env.name !== 'production') {
 		menubar.window.openDevTools();
 	} else {
@@ -37,9 +36,29 @@ menubar.on('after-create-window', function () {
 
 /**
  * After window has been shown
+ *
  * @return void
  */
-menubar.on('after-show', function () {
+menubar.on('after-show', () => {
 	// If heartbeat hasn't expired, show offline button?
 	menubar.window.webContents.send('OnCreateOrShowEvents');
+});
+
+/**
+ * Exit application
+ *
+ * @return void
+ */
+ipc.on('exit', () => {
+	menubar.app.quit();
+});
+
+/**
+ * Exceptions
+ *
+ * void
+ */
+process.on('uncaughtException', (err) => {
+	alert('Uncaught Exception: ' + err.message, err.stack || '');
+	mb.app.quit();
 });

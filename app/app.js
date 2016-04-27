@@ -15,23 +15,19 @@ import stopwatch from 'timer-stopwatch';
 import moment from 'moment';
 
 // Helpers
-import './helpers/context_menu';
+import './helpers/context-menu';
+import './helpers/external-links';
 
-// Global variables
+// Global Node variables
 let app = remote.app;
 let ipc = ipcRenderer;
 let shell = remote.shell;
 let appDir = jetpack.cwd(app.getAppPath());
 
-/*
-let shortcut = remote.require('global-shortcut');
-shortcut.register('ctrl+alt+s', function () {
-    alert('here');
-});
-*/
-
+// Global App variables
 let cprTimer;
 
+// Global Constants
 const DATETIME_FORMAT = 'DD/MM/YY hh:mm A';
 const messages = {
     errors: {
@@ -39,7 +35,8 @@ const messages = {
         badRequest: "Heartbeat refused by the server. Incorrect password maybe?"
     },
     confirm: {
-        reset: "Are you sure you want to reset the application?"
+        reset: "Are you sure you want to reset the application?",
+        exit: "Are you sure you want to exit?"
     }
 }
 
@@ -56,21 +53,27 @@ class App {
         // Shortcut to DOM elements
         this.model = document.getElementById('model');
         this.urlInput = document.getElementById('url');
+        this.exitButton = document.getElementById('exit');
         this.saveButton = document.getElementById('save');
         this.appContainer = document.getElementById('app');
         this.settingsForm = document.getElementById('settings');
+        this.pingNowButton = document.getElementById('ping-now');
         this.intervalInput = document.getElementById('interval');
         this.offlineButton = document.getElementById('go-offline');
         this.resetButton = document.getElementById('reset-settings');
         this.lastHeartbeat = document.getElementById('last-heartbeat');
+        this.closeModelButton = document.getElementById('close-model');
         this.heartbeatCheckbox = document.getElementById('send-heartbeat');
 
         // Event Listeners
+        this.exitButton.addEventListener('click', () => this.exit());
         this.saveButton.addEventListener('click', () => this.saveSettings());
         this.offlineButton.addEventListener('click', () => this.goOffline());
         this.resetButton.addEventListener('click', () => App.resetSettings());
         this.urlInput.addEventListener('input', () => this.toggleSaveButton());
         this.settingsForm.addEventListener('submit', (e) => this.submitForm(e));
+        this.pingNowButton.addEventListener('click', () => this.sendHeartbeat());
+        this.closeModelButton.addEventListener('click', (e) => this.closeModel(e));
         this.intervalInput.addEventListener('input', () => this.toggleSaveButton());
         this.intervalInput.addEventListener('keydown', (e) => this.validateInterval(e));
         this.heartbeatCheckbox.addEventListener('change', () => this.toggleSaveButton());
@@ -80,10 +83,7 @@ class App {
             this.getSettings(key, localStorage[key]);
         }
 
-        // Toggle ofline button / register main.js events
-        this.toggleGoOfflineButton();
-        this.registerIpcEvents();
-        this.start();
+        this.init();
     }
 
     /**
@@ -196,18 +196,39 @@ class App {
     registerIpcEvents() {
         ipc.on('OnCreateOrShowEvents', () => {
             this.toggleGoOfflineButton();
-
+            this.toggleDisconnectModel();
         });
+        /*
+        let shortcut = remote.require('global-shortcut');
+        shortcut.register('ctrl+alt+s', function () {
+            alert('here');
+        });
+        */
     }
 
     /**
-     * start() on start of application
+     * init() on start of application
      *
      * @return void
      */
-    start() {
+    init() {
+        this.registerIpcEvents();
+        this.toggleGoOfflineButton();
+        this.toggleDisconnectModel();
         if (this.heartbeatCheckbox.checked === true) {
             this.sendHeartbeat();
+        }
+    }
+
+    /**
+     * exit() Exit application
+     *
+     * @return void
+     */
+    exit() {
+        let sure = confirm(messages.confirm.exit);
+        if (sure) {
+            ipc.send('exit');
         }
     }
 
@@ -248,9 +269,7 @@ class App {
         if (typeof cprTimer == "object") cprTimer.stop();
 
         // If heartbeat isn't enabled, staph
-        if (heartbeat.checked === false) {
-            return false;
-        }
+        if (heartbeat.checked === false) return false;
 
         this.sendHeartbeat();
         this.toggleGoOfflineButton();
@@ -277,6 +296,11 @@ class App {
      * @return {Boolean} whether success or not
      */
     sendHeartbeat() {
+        if (!App.isUserConnectedToInternet()) {
+            let isCPREnabled = App.getSetting('send-heartbeat');
+            if (isCPREnabled == "true") this.performCPR();
+            return false;
+        }
 
         let url = App.getSetting('url'),
             interval = App.getSetting('interval');
@@ -312,9 +336,7 @@ class App {
 
                 this.updateLastHeartbeat(body.expires_on);
                 this.toggleGoOfflineButton();
-                if (isCPREnabled == "true") {
-                    this.performCPR();
-                }
+                if (isCPREnabled == "true") this.performCPR();
                 return true;
             } else {
                 this.heartbeatBadRequest = true;
@@ -344,6 +366,7 @@ class App {
      * @return {Boolean} whether success or not
      */
     sendFlatline() {
+        if (!App.isUserConnectedToInternet()) return false;
 
         let url = App.getSetting('url');
 
@@ -420,14 +443,13 @@ class App {
      * @return void
      */
     updateLastHeartbeat(expires_on) {
-
-        expires_on = ((expires_on) ? moment(expires_on) : moment().subtract(1, 'minute'));
+        let expiry = ((expires_on) ? moment(expires_on) : moment().subtract(1, 'minute'));
 
         let nowHR = moment().format(DATETIME_FORMAT),
-            expiresHR = expires_on.format(DATETIME_FORMAT);
+            expiresHR = expiry.format(DATETIME_FORMAT);
 
         this.lastHeartbeat.innerHTML = nowHR;
-        this.lastHeartbeat.title = 'Expires on: ' + expiresHR;
+        this.lastHeartbeat.title = ((expires_on) ? 'Expires on: ' + expiresHR : 'Expired');
 
         App.setSetting('last-heartbeat', nowHR);
         App.setSetting('last-heartbeat-expiry', expiresHR);
@@ -545,6 +567,16 @@ class App {
     }
 
     /**
+     * closeModel() Close the model
+     *
+     * @return void
+     */
+    closeModel(e) {
+        e.preventDefault();
+        this.hideModel();
+    }
+
+    /**
      * isElementVisible() Is element visible
      * on the screen?
      *
@@ -598,6 +630,22 @@ class App {
     }
 
     /**
+     * toggleDisconnectModel() If user is connected
+     * to the internet
+     *
+     * @return {Boolean} Whether user is on wifi/lan
+     */
+    toggleDisconnectModel() {
+        let online = App.isUserConnectedToInternet();
+        if (!online) {
+            this.showModel('disconnected');
+            return false;
+        }
+        this.hideModel('disconnected');
+        return true;
+    }
+
+    /**
      * goOffline() on button click
      * send flatline signal
      *
@@ -624,6 +672,16 @@ class App {
                 }
             ]
         });
+    }
+
+    /**
+     * isUserConnectedToInternet() is connected user
+     * connected to LAN/WiFI
+     *
+     * @return {Boolean} Whether connected or not
+     */
+    static isUserConnectedToInternet() {
+        return ((navigator.onLine) ? true : false);
     }
 
     /**
