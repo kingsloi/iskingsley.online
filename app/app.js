@@ -26,6 +26,7 @@ let appDir = jetpack.cwd(app.getAppPath());
 
 // Global App variables
 let cprTimer;
+let getElmById = id => document.getElementById(id);
 
 // Global Constants
 const DATETIME_FORMAT = "DD/MM/YY hh:mm A";
@@ -39,8 +40,6 @@ const messages = {
         exit: "Are you sure you want to exit?"
     }
 };
-
-let getElmById = id => document.getElementById(id);
 
 class App {
 
@@ -540,17 +539,17 @@ class App {
     showModel(type) {
         this.hideModel();
         switch (type) {
-            case "success":
-                this.model.classList.add("model--is-success");
-                this.animate("fadeinout");
-                break;
-            case "failure":
-                this.model.classList.add("model--is-failure");
-                this.animate("fadeinout");
-                break;
-            case "disconnected":
-                this.model.classList.add("model--is-disconnected");
-                break;
+        case "success":
+            this.model.classList.add("model--is-success");
+            this.animate("fadeinout");
+            break;
+        case "failure":
+            this.model.classList.add("model--is-failure");
+            this.animate("fadeinout");
+            break;
+        case "disconnected":
+            this.model.classList.add("model--is-disconnected");
+            break;
         }
     }
 

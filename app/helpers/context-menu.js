@@ -1,10 +1,6 @@
 "use strict";
 
-import {
-    remote,
-    shell
-} from "electron";
-
+import { remote, shell } from "electron";
 const Menu = remote.Menu;
 const MenuItem = remote.MenuItem;
 
