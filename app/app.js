@@ -7,7 +7,7 @@ import jetpack from "fs-jetpack";
 import env from "./env";
 
 // Plugins
-import request from "superagent";
+import superagent from "superagent";
 import logger from "superagent-logger";
 import validator from "validator";
 import animateCss from "animate.css-js";
@@ -19,10 +19,10 @@ import "./helpers/context-menu";
 import "./helpers/external-links";
 
 // Global Node variables
-let app = remote.app;
-let ipc = ipcRenderer;
-let shell = remote.shell;
-let appDir = jetpack.cwd(app.getAppPath());
+const app = remote.app;
+const ipc = ipcRenderer;
+const shell = remote.shell;
+const appDir = jetpack.cwd(app.getAppPath());
 
 // Global App variables
 let cprTimer;
@@ -52,7 +52,7 @@ class App {
         this.heartbeatBadRequest = false;
 
         // Shortcut to DOM elements
-        this.model = getElmById("model");
+        this.modal = getElmById("modal");
         this.urlInput = getElmById("url");
         this.exitButton = getElmById("exit");
         this.saveButton = getElmById("save");
@@ -63,7 +63,7 @@ class App {
         this.offlineButton = getElmById("go-offline");
         this.resetButton = getElmById("reset-settings");
         this.lastHeartbeat = getElmById("last-heartbeat");
-        this.closeModelButton = getElmById("close-model");
+        this.closeModalButton = getElmById("close-modal");
         this.heartbeatCheckbox = getElmById("send-heartbeat");
 
         // Event Listeners
@@ -74,7 +74,7 @@ class App {
         this.urlInput.addEventListener("input", () => this.toggleSaveButton());
         this.settingsForm.addEventListener("submit", e => this.submitForm(e));
         this.pingNowButton.addEventListener("click", () => this.sendHeartbeat());
-        this.closeModelButton.addEventListener("click", e => this.closeModel(e));
+        this.closeModalButton.addEventListener("click", e => this.closeModal(e));
         this.intervalInput.addEventListener("input", () => this.toggleSaveButton());
         this.intervalInput.addEventListener("keydown", e => this.validateInterval(e));
         this.heartbeatCheckbox.addEventListener("change", () => this.toggleSaveButton());
@@ -94,7 +94,7 @@ class App {
      * @return void
      */
     static resetSettings() {
-        let sure = confirm(messages.confirm.reset);
+        const sure = confirm(messages.confirm.reset);
         if (sure) {
             localStorage.clear();
             location.reload();
@@ -197,7 +197,7 @@ class App {
     registerIpcEvents() {
         ipc.on("OnCreateOrShowEvents", () => {
             this.toggleGoOfflineButton();
-            this.toggleDisconnectModel();
+            this.toggleDisconnectModal();
         });
         /*
         let shortcut = remote.require("global-shortcut");
@@ -215,7 +215,7 @@ class App {
     init() {
         this.registerIpcEvents();
         this.toggleGoOfflineButton();
-        this.toggleDisconnectModel();
+        this.toggleDisconnectModal();
         if (this.heartbeatCheckbox.checked === true) {
             this.sendHeartbeat();
         }
@@ -227,7 +227,7 @@ class App {
      * @return void
      */
     exit() {
-        let sure = confirm(messages.confirm.exit);
+        const sure = confirm(messages.confirm.exit);
         if (sure) {
             ipc.send("exit");
         }
@@ -252,7 +252,7 @@ class App {
      */
     saveSettings() {
         if (!this.validateInput()) {
-            this.showModel("failure");
+            this.showModal("failure");
             return false;
         }
 
@@ -265,7 +265,7 @@ class App {
         App.setSetting("url", url.value);
         App.setSetting("interval", interval.value);
         App.setSetting("send-heartbeat", heartbeat.checked);
-        this.showModel("success");
+        this.showModal("success");
 
         if (cprTimer) cprTimer.stop();
 
@@ -305,7 +305,7 @@ class App {
         let url = App.getSetting("url"),
             interval = App.getSetting("interval");
 
-        request.get(url)
+        superagent.get(url)
             .query({
                 interval: interval
             }).end((error, response) => {
@@ -370,7 +370,7 @@ class App {
 
         let url = App.getSetting("url");
 
-        request.get(url)
+        superagent.get(url)
             .query({
                 offline: "1"
             }).end((error, response) => {
@@ -531,48 +531,48 @@ class App {
     }
 
     /**
-     * showModel() Show model
+     * showModal() Show modal
      *
-     * @param  {String} type type of model to show
+     * @param  {String} type type of modal to show
      * @return void
      */
-    showModel(type) {
-        this.hideModel();
+    showModal(type) {
+        this.hideModal();
         switch (type) {
         case "success":
-            this.model.classList.add("model--is-success");
+            this.modal.classList.add("modal--is-success");
             this.animate("fadeinout");
             break;
         case "failure":
-            this.model.classList.add("model--is-failure");
+            this.modal.classList.add("modal--is-failure");
             this.animate("fadeinout");
             break;
         case "disconnected":
-            this.model.classList.add("model--is-disconnected");
+            this.modal.classList.add("modal--is-disconnected");
             break;
         }
     }
 
     /**
-     * hideModel() Hide the model
+     * hideModal() Hide the modal
      * and remove the success/error classes
      *
      * @return void
      */
-    hideModel() {
-        this.model.classList.remove("model--is-failure");
-        this.model.classList.remove("model--is-success");
-        this.model.classList.remove("model--is-disconnected");
+    hideModal() {
+        this.modal.classList.remove("modal--is-failure");
+        this.modal.classList.remove("modal--is-success");
+        this.modal.classList.remove("modal--is-disconnected");
     }
 
     /**
-     * closeModel() Close the model
+     * closeModal() Close the modal
      *
      * @return void
      */
-    closeModel(e) {
+    closeModal(e) {
         e.preventDefault();
-        this.hideModel();
+        this.hideModal();
     }
 
     /**
@@ -629,18 +629,18 @@ class App {
     }
 
     /**
-     * toggleDisconnectModel() If user is connected
+     * toggleDisconnectModal() If user is connected
      * to the internet
      *
      * @return {Boolean} Whether user is on wifi/lan
      */
-    toggleDisconnectModel() {
+    toggleDisconnectModal() {
         let online = App.isUserConnectedToInternet();
         if (!online) {
-            this.showModel("disconnected");
+            this.showModal("disconnected");
             return false;
         }
-        this.hideModel("disconnected");
+        this.hideModal("disconnected");
         return true;
     }
 
@@ -651,7 +651,7 @@ class App {
      * @return void
      */
     goOffline() {
-        this.showModel("success");
+        this.showModal("success");
         this.sendFlatline();
     }
 
@@ -662,7 +662,7 @@ class App {
      * @return void
      */
     animate(animationType) {
-        animateCss.animate(this.model, {
+        animateCss.animate(this.modal, {
             animationName: animationType,
             duration: 500,
             callbacks: [
