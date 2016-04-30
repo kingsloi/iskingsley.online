@@ -1,0 +1,40 @@
+// Paths
+$icon-font-path: "../fonts/";
+
+// Colours
+$gray: #ecf0f1;
+$gray-lightest: lighten($gray, 25%);
+$brand-primary: darken(#3498db, 6.5%);
+$brand-success: #29b765;
+$brand-info: #3498db;
+$brand-warning: #e67e22;
+$brand-danger: #EC7169;
+
+// Border radius'
+$border-radius-base: 0px;
+$border-radius-large: 0px;
+$border-radius-small: 0px;
+
+//
+@import "animations";
+
+// Core variables and mixins
+@import "../node_modules/bootstrap-sass/assets/stylesheets/bootstrap/variables";
+@import "../node_modules/bootstrap-sass/assets/stylesheets/bootstrap/mixins";
+
+// Reset and dependencies
+@import "../node_modules/bootstrap-sass/assets/stylesheets/bootstrap/normalize";
+@import "../node_modules/bootstrap-sass/assets/stylesheets/bootstrap/glyphicons";
+
+// Core CSS
+@import "../node_modules/bootstrap-sass/assets/stylesheets/bootstrap/scaffolding";
+@import "../node_modules/bootstrap-sass/assets/stylesheets/bootstrap/type";
+@import "../node_modules/bootstrap-sass/assets/stylesheets/bootstrap/code";
+@import "../node_modules/bootstrap-sass/assets/stylesheets/bootstrap/grid";
+@import "../node_modules/bootstrap-sass/assets/stylesheets/bootstrap/forms";
+@import "../node_modules/bootstrap-sass/assets/stylesheets/bootstrap/input-groups";
+@import "../node_modules/bootstrap-sass/assets/stylesheets/bootstrap/buttons";
+
+// Utility classes
+@import "../node_modules/bootstrap-sass/assets/stylesheets/bootstrap/utilities";
+@import "../node_modules/bootstrap-sass/assets/stylesheets/bootstrap/responsive-utilities";

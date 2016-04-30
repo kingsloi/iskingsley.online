@@ -1,4 +1,3 @@
-
 // Global
 import { app, Menu, Tray, ipcMain as ipc } from "electron";
 import createMenubar from "./helpers/window";
@@ -14,7 +13,7 @@ let menubar = createMenubar({
     index: `file://${__dirname}/app.html`,
     tooltip: "Are You Online?",
     width: 350,
-    height: 300,
+    height: 240,
     transparent: false,
     preloadWindow: true
 });

@@ -1,0 +1,46 @@
+// Heartbeat
+@keyframes heartbeat {
+    92% {
+        transform: scale(1, 1);
+    }
+
+    94% {
+        transform: scale(1.2, 1.2);
+    }
+
+    96% {
+        transform: scale(1, 1);
+    }
+
+    98% {
+        transform: scale(1.1, 1.1);
+    }
+
+    100% {
+        transform: scale(1, 1);
+    }
+}
+
+.heart--is-beating {
+    animation: heartbeat 1s 3;
+}
+
+// Hide / Show
+.fadeinout {
+    animation: fadeinout 0.75s linear 1 forwards;
+}
+
+@keyframes fadeinout {
+    0% {
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}

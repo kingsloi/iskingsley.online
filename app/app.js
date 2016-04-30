@@ -25,8 +25,11 @@ const appDir = jetpack.cwd(app.getAppPath());
 // Global App variables
 let cprTimer;
 let getElmById = id => document.getElementById(id);
+let heartbeatButtonClicks = 0;
+let heartbeatClickTimer = null;
 
 // Global Constants
+const CLICK_DELAY = 300;
 const DATETIME_FORMAT = "DD/MM/YY hh:mm A";
 const messages = {
     errors: {
@@ -52,30 +55,44 @@ class App {
         // Shortcut to DOM elements
         this.modal = getElmById("modal");
         this.urlInput = getElmById("url");
+
+        this.settingsPanel = getElmById("settings");
+        this.settingsHideButton = getElmById("settings-hide");
+        this.settingsShowButton = getElmById("settings-show");
+
         this.exitButton = getElmById("exit");
         this.saveButton = getElmById("save");
         this.appContainer = getElmById("app");
-        this.settingsForm = getElmById("settings");
-        this.pingNowButton = getElmById("ping-now");
+        this.heartButton = getElmById("heart");
         this.intervalInput = getElmById("interval");
         this.offlineButton = getElmById("go-offline");
+        this.settingsForm = getElmById("settings-form");
         this.resetButton = getElmById("reset-settings");
         this.lastHeartbeat = getElmById("last-heartbeat");
         this.closeModalButton = getElmById("close-modal");
         this.heartbeatCheckbox = getElmById("send-heartbeat");
+        this.heartbeatButton = getElmById("heart");
 
         // Event Listeners
         this.exitButton.addEventListener("click", () => this.exit());
-        this.saveButton.addEventListener("click", () => this.saveSettings());
-        this.offlineButton.addEventListener("click", () => this.goOffline());
-        this.resetButton.addEventListener("click", () => App.resetSettings());
-        this.urlInput.addEventListener("input", () => this.toggleSaveButton());
-        this.settingsForm.addEventListener("submit", e => this.submitForm(e));
-        this.pingNowButton.addEventListener("click", () => this.sendHeartbeat());
-        this.closeModalButton.addEventListener("click", e => this.closeModal(e));
-        this.intervalInput.addEventListener("input", () => this.toggleSaveButton());
-        this.intervalInput.addEventListener("keydown", e => this.validateInterval(e));
-        this.heartbeatCheckbox.addEventListener("change", () => this.toggleSaveButton());
+        this.settingsShowButton.addEventListener("click", () => this.toggleSettingsPanel());
+        this.settingsHideButton.addEventListener("click", () => this.toggleSettingsPanel());
+
+        // this.saveButton.addEventListener("click", () => this.saveSettings());
+        // //this.offlineButton.addEventListener("click", () => this.goOffline());
+        // this.resetButton.addEventListener("click", () => App.resetSettings());
+        // this.urlInput.addEventListener("input", () => this.toggleSaveButton());
+        // this.settingsForm.addEventListener("submit", e => this.submitForm(e));
+        // //this.pingNowButton.addEventListener("click", () => this.sendHeartbeat());
+        // this.closeModalButton.addEventListener("click", e => this.closeModal(e));
+        // this.intervalInput.addEventListener("input", () => this.toggleSaveButton());
+        // this.intervalInput.addEventListener("keydown", e => this.validateInterval(e));
+        // this.heartbeatCheckbox.addEventListener("change", () => this.toggleSaveButton());
+
+
+
+        this.heartbeatButton.addEventListener("click", () => this.handleHeartClick());
+        this.heartbeatButton.addEventListener("dblclick", e => this.handleHeartDblClick(e));
 
         // Load previously saved settings
         Object.keys(localStorage).forEach(key =>
@@ -83,6 +100,52 @@ class App {
         );
 
         this.init();
+    }
+
+    /**
+     * toggleSettingsPanel() Show/hide settings panel
+     *
+     * @return {Boolean}
+     */
+    toggleSettingsPanel() {
+        let visible = App.isElementVisible(this.settingsPanel);
+        if (visible) {
+            this.settingsPanel.classList.remove("settings--is-visible");
+            return false;
+        }
+        this.settingsPanel.classList.add("settings--is-visible");
+        return true;
+    }
+
+    /**
+     * handleHeartClick() Handle two different types of click
+     * on the heart. If 1, ping now, if double click, toggle heartbeats
+     *
+     * @return void
+     */
+    handleHeartClick() {
+        heartbeatButtonClicks++;
+        if (heartbeatButtonClicks === 1) {
+            heartbeatClickTimer = setTimeout(function () {
+                alert("Single Click");
+                heartbeatButtonClicks = 0;
+            }, CLICK_DELAY);
+        } else {
+            clearTimeout(heartbeatClickTimer);
+            alert("Double Click");
+            heartbeatButtonClicks = 0;
+        }
+    }
+
+    /**
+     * handleHeartDblClick() because we've hacked the
+     * clicks, disable normal double clicks
+     *
+     * @param  {Event} e  event to handle
+     * @return void
+     */
+    handleHeartDblClick(e) {
+        e.preventDefault();
     }
 
     /**
@@ -214,9 +277,9 @@ class App {
         this.registerIpcEvents();
         this.toggleGoOfflineButton();
         this.toggleDisconnectModal();
-        if (this.heartbeatCheckbox.checked === true) {
-            this.sendHeartbeat();
-        }
+        // if (this.heartbeatCheckbox.checked === true) {
+        //     this.sendHeartbeat();
+        // }
     }
 
     /**
@@ -558,9 +621,9 @@ class App {
      * @return void
      */
     hideModal() {
-        this.modal.classList.remove("modal--is-failure");
-        this.modal.classList.remove("modal--is-success");
-        this.modal.classList.remove("modal--is-disconnected");
+        // this.modal.classList.remove("modal--is-failure");
+        // this.modal.classList.remove("modal--is-success");
+        // this.modal.classList.remove("modal--is-disconnected");
     }
 
     /**
@@ -619,10 +682,10 @@ class App {
 
         if (!expiry.isValid() || !expiry.isAfter(now) || this.flatline) {
             this.flatline = false;
-            this.offlineButton.style.display = "none";
+            // this.offlineButton.style.display = "none";
             return false;
         }
-        this.offlineButton.style.display = "inline-block";
+        // this.offlineButton.style.display = "inline-block";
         return true;
     }
 

@@ -1,10 +1,8 @@
-@import "variables";
-@import "../node_modules/bootstrap-sass/assets/stylesheets/bootstrap";
-@import "theme";
+@import "imports";
 
 @font-face {
-    font-family: "Open Sans";
-    src: url(../fonts/OpenSans-Light.ttf) format("truetype");
+    font-family: "SourceSansPro";
+    src: url(../fonts/SourceSansPro-Light.ttf) format("truetype");
     font-style: normal;
 }
 
@@ -12,206 +10,162 @@ html,
 body {
     height: 100%;
     width: 100%;
+    background: $gray;
 }
 
 #app {
-    padding: 0.75em;
-    font-family: 'Open Sans', sans-serif;
+    font-family: 'SourceSansPro', sans-serif;
     position: relative;
 }
 
-.additional-info {
-    text-align: right;
-    position: absolute;
-    bottom: 0px;
-    right: 25px;
+.header {
+    display: table;
+    width: 100%;
+    background: $brand-danger;
 
-    li {
-        font-size: 0.5em;
-        display: inline-block;
+    &__name {
+        display: table-cell;
+        width: 75%;
+        padding: 0.75em;
 
-        + li {
-            margin-left: 5px;
+        h1, h2 {
+            margin: 0;
+            font-size: 1.25em;
+            color: #fff;
+            letter-spacing: -0.5px;
+        }
+    }
+
+    &__actions {
+        display: table-cell;
+        width: 25%;
+        padding: 0 0.5em;
+        background: darken($brand-danger, 5%);
+
+        &__list {
+            list-style-type: none;
+            padding-left: 0;
+            margin: 0;
+            text-align: center;
+
+            li {
+                display: inline-block;
+
+                + li {
+                    margin-left: 5px;
+                }
+            }
+        }
+
+        a {
+            color: #fff;
+            display: block;
         }
     }
 }
 
-.heartbeat__value {
-    display: inline-block;
-}
-
-.beat {
-    -webkit-animation: heartbeat 1s 3;
-    animation: heartbeat 1s 3;
+.content {
+    padding: 2em 0.75em;
+    background: $gray;
 }
 
 .heart {
-    color: red;
-    padding: 0 2.5px;
-}
+    font-size: 7.5em;
+    text-align: center;
 
-.actions {
-    @extend .form-group;
-
-    margin-top: -5px;
-    text-align: right;
-}
-
-.checkbox {
-    input {
-        margin-top: 5px;
-    }
-
-    label {
-        font-size: 1.25em;
-    }
-}
-
-.model {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    z-index: 10;
-    opacity: 0;
-    visibility: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    &--is-success,
-    &--is-failure {
-        background: rgba(255, 255, 255, 1);
-    }
-
-    &--is-success {
-        #success {
-            display: block;
-        }
-    }
-
-    &--is-failure {
-        #failure {
-            display: block;
-        }
-    }
-
-    &--is-disconnected {
-        background-color: rgba(240, 65, 36, 0.85);
-        color: #fff;
-        font-size: 1.25em;
-        line-height: 1.5em;
-        text-align: center;
-        opacity: 1;
-        visibility: visible;
-
-        #close-model {
-            font-size: 2em;
-            font-family: sans-serif;
-            font-weight: bold;
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            color: #fff;
-
-            &:hover,
-            &:active {
-                text-decoration: none;
-            }
-        }
-
-        #disconnected-warning {
-            display: block !important;
-
-            p {
-                padding: 30px;
-            }
-        }
-
-        svg {
-            display: none;
-        }
-    }
-
-    svg,
-    #disconnected-warning {
+    #send-heartbeat {
         display: none;
-    }
-}
 
-#save {
-    display: none;
-}
+        &:checked {
+            + a {
+                &:before {
+                    content: "\e143";
+                }
+            }
+        }
 
-#ping-now {
-    display: inline-block;
-    padding: 2px 3px;
-    color: $brand-info;
-    font-style: 0.85em;
-}
+        + a {
+            @extend .glyphicon;
 
-.exit-application {
-    position: absolute;
-    top: 5px;
-    right: 10px;
-    z-index: 2;
-
-    &:hover {
-        cursor: pointer;
+            &:before {
+                content: "\e005";
+            }
+        }
     }
 
     a {
-        font-size: 0.85em;
-        color: #333;
-        display: block;
-        padding: 2.5px 7.5px;
-        cursor: pointer;
+        color: #FF4949;
+    }
+}
 
-        &:hover {
-            text-decoration: none;
-            cursor: pointer;
+.footer {
+    padding: 0.75em;
+    background: #fff;
+    position: relative;
+
+    &__actions {
+        list-style-type: none;
+        margin: 0;
+        padding-left: 0;
+        font-size: 0.8em;
+
+        li {
+            display: inline-block;
+
+            a {
+                color: #333;
+            }
         }
     }
-}
 
-.fadeinout {
-    animation: fadeinout 0.75s linear 1 forwards;
-}
-
-@keyframes heartbeat {
-    92% {
-        transform: scale(1, 1);
-    }
-
-    94% {
-        transform: scale(1.2, 1.2);
-    }
-
-    96% {
-        transform: scale(1, 1);
-    }
-
-    98% {
-        transform: scale(1.1, 1.1);
-    }
-
-    100% {
-        transform: scale(1, 1);
+    .author {
+        position: absolute;
+        right: 0.75em;
+        top: 0.75em;
+        color: #999;
     }
 }
 
-@keyframes fadeinout {
-    0% {
-        opacity: 0;
-    }
+.settings {
+    background: #fff;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    visibility: hidden;
+    opacity: 0;
 
-    50% {
-        opacity: 1;
+    &--is-visible {
         visibility: visible;
+        opacity: 1;
     }
 
-    100% {
-        opacity: 0;
+    .content {
+        padding-top: 0.75em;
+        padding-bottom: 0.75em;
+    }
+
+    .actions {
+        @extend .clearfix;
+    }
+
+    input[type='text'] {
+        color: #333;
+    }
+
+    .input-group-addon {
+        color: #333;
+    }
+
+    #reset-settings {
+        font-size: 0.7em;
+        color: #333;
+        display: block;
+        padding: 5px;
+    }
+
+    #save {
+        float: right;
     }
 }
