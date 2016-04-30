@@ -1,5 +1,3 @@
-"use strict";
-
 // Core
 import os from "os";
 import { remote, ipcRenderer } from "electron";

@@ -1,0 +1,13 @@
+{
+	"esversion": 6,
+	"globals": {
+		"localStorage": false,
+		"document": false,
+		"confirm" :false,
+		"location": false,
+		"alert":false,
+		"window": false,
+		"navigator":false,
+		"console":false
+	}
+}
