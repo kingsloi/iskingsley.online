@@ -9,15 +9,15 @@
     </head>
     <body id="app">
 
-        <main>
-            <div class="dashboard">
+        <main class="panels">
+            <div id="dashboard-panel" class="dashboard panel--dashboard">
                 <header class="header">
                     <div class="header__name">
                         <h1>Are You Online?</h1>
                     </div>
                     <div class="header__actions">
                         <ul class="header__actions__list">
-                            <li><a href="#" id="settings-show"><i class="glyphicon glyphicon-cog"></i></a></li>
+                            <li><a href="#" id="settings-btn-show"><i class="glyphicon glyphicon-cog"></i></a></li>
                             <li><a href="#" id="exit"><i class="glyphicon glyphicon-remove"></i></a></li>
                         </ul>
                     </div>
@@ -40,14 +40,14 @@
                 </footer>
             </div>
 
-            <div class="settings" id="settings">
+            <div id="settings-panel" class="settings panel--settings">
                 <div class="header">
                     <div class="header__name">
                         <h2>Settings</h2>
                     </div>
                     <div class="header__actions">
                         <ul class="header__actions__list">
-                            <li><a href="#" id="settings-hide"><i class="glyphicon glyphicon-remove"></i></a></li>
+                            <li><a href="#" id="settings-btn-hide"><i class="glyphicon glyphicon-remove"></i></a></li>
                         </ul>
                     </div>
                 </div>
@@ -79,6 +79,30 @@
             </div>
 
         </main>
+
+
+        <div class="modal" id="modal">
+            <div class="icons">
+                <svg height="72px" width="72px" xmlns="http://www.w3.org/2000/svg" id="success">
+                    <g fill="none" stroke="#43ac6a" stroke-width="2">
+                        <circle cx="36" cy="36" r="35" style="stroke-dasharray:240px, 240px; stroke-dashoffset: 480px;">
+                        </circle>
+                        <path d="M17.417,37.778l9.93,9.909l25.444-25.393" style="stroke-dasharray:50px, 50px; stroke-dashoffset: 0px;">
+                        </path>
+                    </g>
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="72px" height="72px" viewBox="6.866 6.444 72 72" id="failure">
+                    <g fill="none" stroke="#F04124" stroke-width="2">
+                        <path d="M42.866,7.506c-19.318,0-35.002,15.681-35.002,35c0,19.317,15.684,35,35.002,35c19.315,0,34.997-15.683,34.997-35
+                    C77.863,23.188,62.182,7.506,42.866,7.506z M46.365,60.006h-7v-6.999h7V60.006z M46.365,46.007h-7v-21h7V46.007z"/>
+                    </g>
+                </svg>
+            </div>
+            <div id="disconnected-warning">
+                <p>You're currently offline. Pinging will resume when you're back online.</p>
+                <a href="#" id="close-modal">&times;</a>
+            </div>
+        </div>
 
         <script src="app.js"></script>
     </body>
